@@ -2,7 +2,7 @@
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen py-32 px-6 lg:px-8">
+    <section className="relative min-h-screen lg:py-36 md:py-36 py-40 px-6 lg:px-8">
       
      <div className="absolute inset-0 bg-[url('/hero.jpg')] bg-cover bg-center opacity-60"></div>
 

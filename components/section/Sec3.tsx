@@ -12,7 +12,7 @@ const plans = [
 
 const Sec3 = () => {
   return (
-    <section className="relative py-24 text-white overflow-hidden">
+    <section className="relative py-24 text-white overflow-hidden bg-[#020617]/60">
 
       {/* Background glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(0,255,200,0.08),transparent_20%)]" />

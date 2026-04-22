@@ -23,7 +23,7 @@ const steps = [
 
 const Sec2 = () => {
   return (
-    <section className="relative w-full py-20 lg:px-10 bg-black/20 text-white overflow-hidden">
+    <section className="relative w-full py-24 lg:px-10 bg-black/30 text-white overflow-hidden">
 
       {/* 🌌 Background glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(0,255,200,0.08),transparent_40%)]" />

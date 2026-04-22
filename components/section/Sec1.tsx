@@ -8,16 +8,16 @@ const Sec1 = () => {
     <main className="relative py-32 px-6 lg:px-8">
 
       {/* dark overlay like Hero */}
-      <div className="absolute inset-0 bg-black/50"></div>
+      <div className="absolute inset-0 bg-[#020617]/70"></div>
 
       <div className="relative z-20 flex flex-col lg:flex-row lg:space-x-20 items-start lg:items-center">
 
         {/* LEFT TEXT SECTION */}
         <div className="space-y-6 max-w-2xl">
-
+{/* 
           <h1 className="text-sm md:text-lg text-gray-300 font-manrope tracking-wide">
             About Us
-          </h1>
+          </h1> */}
 
           <h2 className="text-3xl lg:text-5xl font-bold font-inter text-white leading-tight">
             Welcome to <br />

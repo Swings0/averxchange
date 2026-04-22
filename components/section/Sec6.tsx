@@ -79,7 +79,7 @@ const Sec6 = () => {
     <section className="relative py-24 bg-[#020617] text-white overflow-hidden">
 
       {/* Top Fade */}
-      <div className="pointer-events-none absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-transparent via-[#020617]/60 to-[#020617] z-10" />
+      <div className="pointer-events-none absolute top-0 left-0 w-full h-64 bg-linear-to-b from-transparent via-[#020617]/60 to-[#020617] z-10" />
 
       {/* Background glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,200,0.05),transparent_60%)]" />
@@ -89,7 +89,7 @@ const Sec6 = () => {
         {/* Header */}
         <div className="text-center mb-14">
           <h2 className="text-4xl md:text-5xl font-bold">
-            Live <span className="text-cyan-400">Transactions</span>
+            Live <span className="bg-clip-text text-transparent bg-linear-to-r from-cyan-300 to-cyan-700">Transactions</span>
           </h2>
           <p className="text-gray-400 mt-3 text-sm">
             Real-time deposits and withdrawals happening on the platform
@@ -100,7 +100,7 @@ const Sec6 = () => {
         <div className="rounded-2xl overflow-hidden border border-cyan-400/20 bg-white/5 backdrop-blur-xl">
 
           {/* Head */}
-          <div className="grid grid-cols-4 px-6 py-4 bg-gradient-to-r from-cyan-400/90 via-emerald-400/80 to-emerald-500/90 text-black text-sm font-semibold">
+          <div className="grid grid-cols-4 px-6 py-4 bg-linear-to-r from-cyan-400/90 via-emerald-400/80 to-emerald-500/90 text-black text-sm font-semibold">
             <span>Name</span>
             <span>Amount</span>
             <span>Gateway</span>

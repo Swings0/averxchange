@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { LogIn, Menu, X } from "lucide-react";
-import { Button } from "../ui/button";
+import { usePathname } from "next/navigation"; // ✅ added
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname(); // ✅ added
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,28 +46,44 @@ const Navbar = () => {
         {/* DESKTOP MENU */}
         <div className="hidden lg:flex">
           <ul className="flex items-center gap-6 font-manrope">
-            <li className="hover:text-cyan-400 transition-colors duration-300">
+            
+            <li className={`transition-colors duration-300 ${
+              pathname === "/" ? "text-cyan-400" : "hover:text-cyan-400"
+            }`}>
               <a href="/">Home</a>
             </li>
-            <li className="hover:text-cyan-400 transition-colors duration-300">
+
+            <li className={`transition-colors duration-300 ${
+              pathname === "/about" ? "text-cyan-400" : "hover:text-cyan-400"
+            }`}>
               <a href="/about">About</a>
             </li>
-            <li className="hover:text-cyan-400 transition-colors duration-300">
-              <a href="/trade">Plans</a>
+
+            <li className={`transition-colors duration-300 ${
+              pathname === "/plans" ? "text-cyan-400" : "hover:text-cyan-400"
+            }`}>
+              <a href="/plans">Plans</a>
             </li>
-            <li className="hover:text-cyan-400 transition-colors duration-300">
-              <a href="/trade">FAQ</a>
+
+            <li className={`transition-colors duration-300 ${
+              pathname === "/faq" ? "text-cyan-400" : "hover:text-cyan-400"
+            }`}>
+              <a href="/faq">FAQ</a>
             </li>
-            <li className="hover:text-cyan-400 transition-colors duration-300">
+
+            <li className={`transition-colors duration-300 ${
+              pathname === "/contact" ? "text-cyan-400" : "hover:text-cyan-400"
+            }`}>
               <a href="/contact">Contact</a>
             </li>
+
           </ul>
         </div>
 
         {/* DESKTOP BUTTON */}
         <div className="hidden lg:flex items-center gap-4">
           <button className="flex items-center gap-2 py-2 rounded-lg hover:scale-105 transition-transform duration-300">
-            <span className="bg-clip-text text-transparent bg-linear-to-r from-cyan-700 to-cyan-300">
+            <span className="bg-clip-text text-transparent bg-linear-to-r from-cyan-700 to-cyan-300 cursor-pointer">
               Sign In
             </span>
             <LogIn size={20} strokeWidth={2.25} className="text-cyan-500" />
@@ -81,18 +98,43 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* ✅ ANIMATED MOBILE MENU */}
+      {/* MOBILE MENU */}
       <div
         className={`lg:hidden overflow-hidden transition-all duration-300 ${
           menuOpen ? "max-h-125 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
         <div className="bg-black/90 backdrop-blur-md px-6 py-6 space-y-6 font-manrope">
-          <a href="/" className="block hover:text-cyan-400">Home</a>
-          <a href="/about" className="block hover:text-cyan-400">About</a>
-          <a href="/trade" className="block hover:text-cyan-400">Plans</a>
-          <a href="/trade" className="block hover:text-cyan-400">FAQ</a>
-          <a href="/contact" className="block hover:text-cyan-400">Contact</a>
+
+          <a href="/" className={`block ${
+            pathname === "/" ? "text-cyan-400" : "hover:text-cyan-400"
+          }`}>
+            Home
+          </a>
+
+          <a href="/about" className={`block ${
+            pathname === "/about" ? "text-cyan-400" : "hover:text-cyan-400"
+          }`}>
+            About
+          </a>
+
+          <a href="/plans" className={`block ${
+            pathname === "/plans" ? "text-cyan-400" : "hover:text-cyan-400"
+          }`}>
+            Plans
+          </a>
+
+          <a href="/faq" className={`block ${
+            pathname === "/faq" ? "text-cyan-400" : "hover:text-cyan-400"
+          }`}>
+            FAQ
+          </a>
+
+          <a href="/contact" className={`block ${
+            pathname === "/contact" ? "text-cyan-400" : "hover:text-cyan-400"
+          }`}>
+            Contact
+          </a>
 
           <button className="flex items-center gap-2 pt-4">
             <span className="bg-clip-text text-transparent bg-linear-to-r from-cyan-700 to-cyan-300">
@@ -100,6 +142,7 @@ const Navbar = () => {
             </span>
             <LogIn size={20} className="text-cyan-500" />
           </button>
+
         </div>
       </div>
     </nav>

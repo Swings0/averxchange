@@ -1,8 +1,11 @@
-import type { Metadata } from "next"
-import { Inter, Manrope, Geist } from "next/font/google"
-import "./globals.css"
-import { cn } from "@/lib/utils"
-import { ConstellationBackground } from "@/components/ui/constellation"
+import type { Metadata } from "next";
+import { Inter, Manrope, Geist } from "next/font/google";
+import "./globals.css";
+import { cn } from "@/lib/utils";
+import { ConstellationBackground } from "@/components/ui/constellation";
+import "swiper/swiper-bundle.css";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -48,7 +51,9 @@ export default function RootLayout({
 
         {/* MAIN CONTENT */}
         <main className="relative z-10">
+          <Navbar />
           {children}
+          <Footer />
         </main>
 
       </body>

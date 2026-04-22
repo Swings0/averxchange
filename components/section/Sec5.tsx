@@ -3,7 +3,7 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 
-import "swiper/css/bundle";
+
 
 const investors = [
   { name: "Ericson Fulal", amount: "$196,929", img: "/investors1.jpg" },
@@ -30,7 +30,7 @@ export default function TopInvestors() {
       {/* Glow background */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,200,0.06),transparent_50%)]" />
 
-      <div className="relative max-w-7xl mx-auto px-6">
+      <div className="relative max-w-7xl mx-auto px-6 py-5">
 
         {/* Header */}
         <div className="text-center mb-16">
