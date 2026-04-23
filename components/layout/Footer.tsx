@@ -50,7 +50,7 @@ const Footer = () => {
             </h3>
 
             <p className="text-sm text-white/60">
-              Email: officialaverexchange@gmail.com
+              Email: exchangeaver@gmail.com
             </p>
             <p className="text-sm text-white/60 mt-2">
               Location: Cheyenne, Wyoming
@@ -102,7 +102,7 @@ const Footer = () => {
         {/* BOTTOM */}
         <div className="mt-36 flex flex-col md:flex-row justify-between items-center text-sm text-white/50 lg:pl-2">
 
-          <p>Copyright © {year} Averexchange All Rights Reserved</p>
+          <p className="texts-sm">Copyright © {year} Averexchange All Rights Reserved</p>
 
         </div>
       </div>
