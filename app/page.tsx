@@ -1,5 +1,5 @@
-// import Navbar from "@/components/layout/Navbar";
-// import Footer from "@/components/layout/Footer";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import Hero from "@/components/section/Hero";
 import CustomTicker from "@/components/widget/CustomTicker";
 import Sec1 from "@/components/section/Sec1";
@@ -19,7 +19,7 @@ import Sec10 from "@/components/section/Sec10";
 const page = () => {
   return (
     <main>
-      {/* <Navbar /> */}
+      <Navbar />
       <Hero />
       <CustomTicker />
       <Sec1 />
@@ -32,7 +32,7 @@ const page = () => {
       <Sec8 />
       <Sec9 />
       <Sec10 />
-      {/* <Footer /> */}
+      <Footer />
       {/* <Ticker /> */}
     </main>
   )

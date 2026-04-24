@@ -1,4 +1,5 @@
 'use client';
+import Link from "next/link";
 
 const Hero = () => {
   return (
@@ -17,10 +18,11 @@ const Hero = () => {
           <p className="text-3xl lg:text-[2.7rem] font-bold font-inter text-white leading-tight">
             A PROFITABLE PLATFORM <br /> FOR HIGH-MARGIN <br /> INVESTMENT
           </p>
-
-          <button className="bg-linear-to-r from-cyan-300 to-cyan-900 text-white font-semibold font-manrope mt-4 py-3 px-6 rounded-lg hover:scale-95 transform transition-transform duration-300">
+         <Link href="/register">
+          <button className="bg-linear-to-r from-cyan-300 to-cyan-900 text-white font-semibold font-manrope mt-4 py-3 px-6 rounded-lg hover:scale-95 transform transition-transform duration-300 cursor-pointer">
             Get Started
           </button>
+         </Link>
         </div>
 
         {/* RIGHT STATS */}

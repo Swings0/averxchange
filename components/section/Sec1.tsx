@@ -43,7 +43,7 @@ const Sec1 = () => {
             transparency, continuous improvement, and responsible use of technology in financial markets.
           </p>
 
-          <button className="bg-linear-to-r from-cyan-300 to-cyan-900 text-white font-semibold font-manrope py-3 px-6 rounded-lg hover:scale-95 transform transition-transform duration-300">
+          <button className="bg-linear-to-r from-cyan-300 to-cyan-900 text-white font-semibold font-manrope py-3 px-6 rounded-lg hover:scale-95 transform transition-transform duration-300 cursor-pointer">
             Learn More
           </button>
         </div>

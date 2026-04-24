@@ -51,9 +51,9 @@ export default function RootLayout({
 
         {/* MAIN CONTENT */}
         <main className="relative z-10">
-          <Navbar />
+          {/* <Navbar /> */}
           {children}
-          <Footer />
+          {/* <Footer /> */}
         </main>
 
       </body>

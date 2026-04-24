@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { LogIn, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation"; // ✅ added
-
+import Link from "next/link";
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -50,31 +50,31 @@ const Navbar = () => {
             <li className={`transition-colors duration-300 ${
               pathname === "/" ? "text-cyan-400" : "hover:text-cyan-400"
             }`}>
-              <a href="/">Home</a>
+              <Link href="/">Home</Link>
             </li>
 
             <li className={`transition-colors duration-300 ${
               pathname === "/about" ? "text-cyan-400" : "hover:text-cyan-400"
             }`}>
-              <a href="/about">About</a>
+              <Link href="/about">About</Link>
             </li>
 
             <li className={`transition-colors duration-300 ${
               pathname === "/plans" ? "text-cyan-400" : "hover:text-cyan-400"
             }`}>
-              <a href="/plans">Plans</a>
+              <Link href="/plans">Plans</Link>
             </li>
 
             <li className={`transition-colors duration-300 ${
               pathname === "/faq" ? "text-cyan-400" : "hover:text-cyan-400"
             }`}>
-              <a href="/faq">FAQ</a>
+              <Link href="/faq">FAQ</Link>
             </li>
 
             <li className={`transition-colors duration-300 ${
               pathname === "/contact" ? "text-cyan-400" : "hover:text-cyan-400"
             }`}>
-              <a href="/contact">Contact</a>
+              <Link href="/contact">Contact</Link>
             </li>
 
           </ul>
@@ -82,12 +82,14 @@ const Navbar = () => {
 
         {/* DESKTOP BUTTON */}
         <div className="hidden lg:flex items-center gap-4">
-          <button className="flex items-center gap-2 py-2 rounded-lg hover:scale-105 transition-transform duration-300">
-            <span className="bg-clip-text text-transparent bg-linear-to-r from-cyan-700 to-cyan-300 cursor-pointer">
-              Sign In
-            </span>
-            <LogIn size={20} strokeWidth={2.25} className="text-cyan-500" />
-          </button>
+          <Link href="/login">
+            <button className="flex items-center gap-2 py-2 rounded-lg hover:scale-105 transition-transform duration-300">
+              <span className="bg-clip-text text-transparent bg-linear-to-r from-cyan-700 to-cyan-300 cursor-pointer">
+                Sign In
+              </span>
+              <LogIn size={20} strokeWidth={2.25} className="text-cyan-500" />
+            </button>
+          </Link>
         </div>
 
         {/* HAMBURGER */}
