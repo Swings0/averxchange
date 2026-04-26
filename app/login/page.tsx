@@ -116,9 +116,11 @@ export default function LoginPage() {
             <div className="relative w-55 h-55 lg:w-65 lg:h-65">
               <Image
                 src="/SignUp1.png"
-                alt="Login"
+                alt="login"
                 fill
                 className="rounded-full object-cover shadow-2xl opacity-80"
+                loading="eager"
+                sizes="(max-width: 1024px) 0px, 260px"
               />
             </div>
           </div>

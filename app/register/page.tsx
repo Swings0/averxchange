@@ -157,6 +157,7 @@ export default function RegisterPage() {
                 fill
                 className="rounded-full object-cover shadow-2xl opacity-80"
                 loading="eager"
+                sizes="(max-width: 1024px) 0px, 260px"
               />
             </div>
           </div>
