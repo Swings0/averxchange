@@ -119,8 +119,8 @@ export default function DepositPage() {
   const handleProceed = () => {
     setError("");
     const amt = parseFloat(amount);
-    if (!amount || isNaN(amt) || amt < 5) {
-      setError("Minimum deposit is $5");
+    if (!amount || isNaN(amt) || amt < 100) {
+      setError("Minimum deposit is $100");
       return;
     }
     setStep(2);
@@ -222,7 +222,7 @@ export default function DepositPage() {
                       className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-cyan-500/50 focus:bg-white/8 transition-all"
                     />
                   </div>
-                  <p className="text-xs text-white/30 mt-1.5">Minimum deposit: $5</p>
+                  <p className="text-xs text-white/30 mt-1.5">Minimum deposit: $100</p>
                   {error && <p className="text-xs text-rose-400 mt-1.5">{error}</p>}
                 </div>
 
@@ -424,7 +424,7 @@ export default function DepositPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-white/40 mb-1">Minimum Deposit</p>
-                    <p className="text-xl font-bold text-white">$5</p>
+                    <p className="text-xl font-bold text-white">$100</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
                     <Download size={18} className="text-cyan-400" />

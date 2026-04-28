@@ -15,6 +15,7 @@ import {
   ChevronRight,
   LogOut,
   Coins,
+  BookOpen,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -23,9 +24,9 @@ const NAV_ITEMS = [
   { label: "Withdrawal",     href: "/dashboard/withdrawal",     icon: Upload },
   { label: "Transactions",   href: "/dashboard/transactions",   icon: ArrowLeftRight },
   { label: "Profile",        href: "/dashboard/profile",        icon: User },
-  { label: "Trading Plans",  href: "/dashboard/trading-plans",  icon: TrendingUp },
+  { label: "Trading Plans",   href: "/dashboard/purchase-plan",   icon: TrendingUp },
+  { label: "My Plans",        href: "/dashboard/my-plans",        icon: BookOpen },
   { label: "Referrals",      href: "/dashboard/referrals",      icon: Users },
-  { label: "Connect Wallet", href: "/dashboard/connect-wallet", icon: Wallet },
 ];
 
 interface SidebarProps {
@@ -163,3 +164,7 @@ export default function Sidebar({
     </>
   );
 }
+
+
+
+
