@@ -24,7 +24,7 @@ export default async function DashboardPage() {
 
   const transactions = await db
     .collection("transactions")
-    .find({ userId: payload.userId })
+    .find({ userId: payload.userId, status: "approved" })
     .sort({ createdAt: -1 })
     .limit(5)
     .toArray();
@@ -76,10 +76,7 @@ export default async function DashboardPage() {
       />
 
       {/* Referral */}
-      <ReferralCard
-        referralCode={user.referralCode || ""}
-        baseUrl={process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}
-      />
+      <ReferralCard />
 
       {/* Recent transactions */}
       <RecentTransactions

@@ -3,6 +3,8 @@ import clientPromise from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+const FIFTEEN_HOURS = 60 * 60 * 15; // 54000 seconds
+
 export async function POST(req: Request) {
   const { email, password } = await req.json();
 
@@ -24,18 +26,18 @@ export async function POST(req: Request) {
   const token = jwt.sign(
     { userId: user._id },
     process.env.JWT_SECRET!,
-    { expiresIn: "1d" }
+    { expiresIn: "15h" }
   );
 
   const res = NextResponse.json({ success: true });
 
-res.cookies.set("token", token, {
-  httpOnly: true,
-  secure: true,
-  sameSite: "strict",
-  path: "/",
-  maxAge: 60 * 60 * 24, // ✅ 1 day
-});
+  res.cookies.set("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: FIFTEEN_HOURS,
+  });
 
   return res;
 }

@@ -1,16 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Copy, Check, Users } from "lucide-react";
 
-interface ReferralCardProps {
-  referralCode: string;
-  baseUrl: string;
-}
-
-export default function ReferralCard({ referralCode, baseUrl }: ReferralCardProps) {
+export default function ReferralCard() {
+  const [referralCode, setReferralCode] = useState("");
   const [copied, setCopied] = useState(false);
-  const link = referralCode ? `${baseUrl}/ref/${referralCode}` : "";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  useEffect(() => {
+    fetch("/api/referrals")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.referralCode) setReferralCode(data.referralCode);
+      })
+      .catch(console.error);
+  }, []);
+
+  const link = referralCode ? `${baseUrl}/register?ref=${referralCode}` : "";
 
   const handleCopy = async () => {
     if (!link) return;
@@ -37,19 +44,18 @@ export default function ReferralCard({ referralCode, baseUrl }: ReferralCardProp
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white/50 truncate font-mono">
-            {link || "No referral code assigned yet"}
+          <div className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white/60 truncate font-mono">
+            {link || "Loading..."}
           </div>
           <button
             onClick={handleCopy}
             disabled={!link}
             className={`
-              flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold
-              border transition-all duration-200 flex-shrink-0
-              ${
-                copied
-                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                  : "bg-white/10 text-white border-white/10 hover:bg-white/15"
+              flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-semibold
+              transition-all duration-200 flex-shrink-0
+              ${copied
+                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                : "bg-white/10 text-white border-white/10 hover:bg-white/15"
               }
               disabled:opacity-30 disabled:cursor-not-allowed
             `}
@@ -58,6 +64,13 @@ export default function ReferralCard({ referralCode, baseUrl }: ReferralCardProp
             <span className="hidden sm:inline">{copied ? "Copied!" : "Copy"}</span>
           </button>
         </div>
+
+        {referralCode && (
+          <p className="text-xs text-white/30 mt-2.5">
+            Your referral ID:{" "}
+            <span className="text-cyan-400 font-mono font-semibold">{referralCode}</span>
+          </p>
+        )}
       </div>
     </section>
   );

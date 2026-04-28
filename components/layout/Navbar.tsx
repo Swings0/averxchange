@@ -138,12 +138,14 @@ const Navbar = () => {
             Contact
           </a>
 
-          <button className="flex items-center gap-2 pt-4">
-            <span className="bg-clip-text text-transparent bg-linear-to-r from-cyan-700 to-cyan-300">
-              Sign In
-            </span>
-            <LogIn size={20} className="text-cyan-500" />
-          </button>
+          <Link href="/login">
+            <button className="flex items-center gap-2 pt-4 cursor-pointer">
+              <span className="bg-clip-text text-transparent bg-linear-to-r from-cyan-700 to-cyan-300">
+                Sign In
+              </span>
+              <LogIn size={20} className="text-cyan-500" />
+            </button>
+          </Link>
 
         </div>
       </div>

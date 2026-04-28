@@ -39,7 +39,7 @@ export async function GET() {
       referralBonus: user.referralBonus ?? 0,
       totalDeposit: user.totalDeposit ?? 0,
       totalWithdrawal: user.totalWithdrawal ?? 0,
-      referralCode: user.referralCode || "",
+      referralCode: user.referralCode || user.username || "",
     });
   } catch (err) {
     console.error(err);
