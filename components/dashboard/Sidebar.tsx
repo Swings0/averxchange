@@ -1,32 +1,24 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home,
-  Download,
-  Upload,
-  ArrowLeftRight,
-  User,
-  TrendingUp,
-  Users,
-  Wallet,
-  X,
-  ChevronRight,
-  LogOut,
-  Coins,
-  BookOpen,
+  Home, Download, Upload, ArrowLeftRight, User,
+  TrendingUp, Users, X, ChevronRight, LogOut,
+  Coins, BookOpen, SendHorizonal,
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { label: "Home",           href: "/dashboard",                icon: Home },
-  { label: "Deposit",        href: "/dashboard/deposit",        icon: Download },
-  { label: "Withdrawal",     href: "/dashboard/withdrawal",     icon: Upload },
-  { label: "Transactions",   href: "/dashboard/transactions",   icon: ArrowLeftRight },
-  { label: "Profile",        href: "/dashboard/profile",        icon: User },
-  { label: "Trading Plans",   href: "/dashboard/purchase-plan",   icon: TrendingUp },
-  { label: "My Plans",        href: "/dashboard/my-plans",        icon: BookOpen },
-  { label: "Referrals",      href: "/dashboard/referrals",      icon: Users },
+  { label: "Home",           href: "/dashboard",               icon: Home },
+  { label: "Deposit",        href: "/dashboard/deposit",       icon: Download },
+  { label: "Withdrawal",     href: "/dashboard/withdrawal",    icon: Upload },
+  { label: "Transactions",   href: "/dashboard/transactions",  icon: ArrowLeftRight },
+  { label: "Transfer Funds", href: "/dashboard/transfer",      icon: SendHorizonal },
+  { label: "Profile",        href: "/dashboard/profile",       icon: User },
+  { label: "Trading Plans",  href: "/dashboard/purchase-plan", icon: TrendingUp },
+  { label: "My Plans",       href: "/dashboard/my-plans",      icon: BookOpen },
+  { label: "Referrals",      href: "/dashboard/referrals",     icon: Users },
 ];
 
 interface SidebarProps {
@@ -36,20 +28,30 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-export default function Sidebar({
-  displayName,
-  balance,
-  isOpen,
-  onClose,
-}: SidebarProps) {
+export default function Sidebar({ displayName, balance: initialBalance, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const [balance, setBalance] = useState(initialBalance);
+
+  useEffect(() => { setBalance(initialBalance); }, [initialBalance]);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        const res = await fetch("/api/me");
+        const data = await res.json();
+        if (typeof data.balance === "number") setBalance(data.balance);
+      } catch {}
+    };
+    fetchBalance();
+    const id = setInterval(fetchBalance, 30000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <>
-      {/* Mobile overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
           onClick={onClose}
         />
       )}
@@ -60,10 +62,10 @@ export default function Sidebar({
           bg-[#0b1524] border-r border-white/[0.06]
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-            lg:translate-x-0
+          lg:translate-x-0
         `}
       >
-        {/* Header — logo + user */}
+        {/* Header */}
         <div className="flex items-center justify-between px-5 pt-6 pb-4 border-b border-white/[0.06]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/30 to-blue-600/30 border border-cyan-500/20 flex items-center justify-center">
@@ -87,7 +89,7 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Balance */}
+        {/* Live Balance */}
         <div className="px-4 py-4">
           <div className="flex items-center gap-3 bg-gradient-to-r from-cyan-500/10 to-blue-600/10 border border-cyan-500/20 rounded-xl px-4 py-3">
             <Coins size={18} className="text-cyan-400 flex-shrink-0" />
@@ -112,25 +114,18 @@ export default function Sidebar({
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
                   transition-all duration-150 group
-                  ${
-                    active
-                      ? "bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-white border border-cyan-500/30"
-                      : "text-white/50 hover:bg-white/5 hover:text-white/90"
+                  ${active
+                    ? "bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-white border border-cyan-500/30"
+                    : "text-white/50 hover:bg-white/5 hover:text-white/90"
                   }
                 `}
               >
                 <Icon
                   size={17}
-                  className={
-                    active
-                      ? "text-cyan-400"
-                      : "text-white/30 group-hover:text-white/60"
-                  }
+                  className={active ? "text-cyan-400" : "text-white/30 group-hover:text-white/60"}
                 />
                 <span className="flex-1">{label}</span>
-                {active && (
-                  <ChevronRight size={13} className="text-cyan-400/50" />
-                )}
+                {active && <ChevronRight size={13} className="text-cyan-400/50" />}
               </Link>
             );
           })}
@@ -164,7 +159,3 @@ export default function Sidebar({
     </>
   );
 }
-
-
-
-

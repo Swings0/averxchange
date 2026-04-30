@@ -29,29 +29,24 @@ export default async function DashboardPage() {
     .limit(5)
     .toArray();
 
-  const activePlans = await db
-    .collection("plans")
-    .find({ userId: payload.userId, status: "active" })
-    .toArray();
-
   const displayName = user.username || user.fullName || "User";
+
+  // Check if user has any active plans (for banner)
+  const hasActivePlan = await db.collection("plans").countDocuments({
+    userId: payload.userId, status: "active",
+  }) > 0;
 
   return (
     <div className="space-y-8">
-      {/* Greeting */}
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight">
           Welcome, {displayName}!
         </h1>
-        <p className="text-white/40 text-sm mt-1">
-          Here&apos;s your account overview
-        </p>
+        <p className="text-white/40 text-sm mt-1">Here&apos;s your account overview</p>
       </div>
 
-      {/* Dismissible banners */}
-      <WelcomeBanner hasActivePlan={activePlans.length > 0} />
+      <WelcomeBanner hasActivePlan={hasActivePlan} />
 
-      {/* Stats grid */}
       <AccountSummary
         balance={user.balance ?? 0}
         totalProfit={user.totalProfit ?? 0}
@@ -62,23 +57,11 @@ export default async function DashboardPage() {
         totalWithdrawal={user.totalWithdrawal ?? 0}
       />
 
-      {/* Active plans */}
-      <ActivePlans
-        plans={activePlans.map((p) => ({
-          id: p._id.toString(),
-          name: p.name,
-          amount: p.amount ?? 0,
-          profit: p.profit ?? 0,
-          status: p.status,
-          startDate: p.startDate?.toISOString() ?? "",
-          endDate: p.endDate?.toISOString() ?? "",
-        }))}
-      />
+      {/* ActivePlans fetches its own data client-side */}
+      <ActivePlans />
 
-      {/* Referral */}
       <ReferralCard />
 
-      {/* Recent transactions */}
       <RecentTransactions
         transactions={transactions.map((t) => ({
           id: t._id.toString(),

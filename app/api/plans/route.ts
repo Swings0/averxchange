@@ -3,16 +3,7 @@ import clientPromise from "@/lib/mongodb";
 import { getTokenPayload } from "@/lib/auth";
 import { ObjectId } from "mongodb";
 import { transporter } from "@/lib/mailer";
-
-const PLANS = [
-  { id: "bronze",   name: "Bronze Plan",   min: 500,   max: 1200,  profit: 9,    duration: 14 },
-  { id: "silver",   name: "Silver Plan",   min: 1000,  max: 2100,  profit: 10,   duration: 14 },
-  { id: "gold",     name: "Gold Plan",     min: 2000,  max: 5200,  profit: 11.5, duration: 21 },
-  { id: "platinum", name: "Platinum Plan", min: 5000,  max: 15000, profit: 12,   duration: 21 },
-  { id: "diamond",  name: "Diamond Plan",  min: 10000, max: 20000, profit: 13.5, duration: 21 },
-  { id: "elite",    name: "Elite Plan",    min: 20000, max: 40000, profit: 14.5, duration: 30 },
-  { id: "legacy",   name: "Legacy Plan",   min: 40000, max: 50000, profit: 15.5, duration: 30 },
-];
+import { PLANS } from "@/lib/plans";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,14 +13,12 @@ export async function POST(req: NextRequest) {
     const { planId, amount } = await req.json();
 
     const plan = PLANS.find((p) => p.id === planId);
-    if (!plan) return NextResponse.json({ error: "Invalid plan selected" }, { status: 400 });
+    if (!plan) return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
 
     const amt = parseFloat(amount);
-    if (isNaN(amt)) return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
-
-    if (amt < plan.min || amt > plan.max) {
+    if (isNaN(amt) || amt !== plan.price) {
       return NextResponse.json(
-        { error: `Amount must be between $${plan.min.toLocaleString()} and $${plan.max.toLocaleString()} for the ${plan.name}.` },
+        { error: `This plan requires exactly $${plan.price.toLocaleString()}` },
         { status: 400 }
       );
     }
@@ -40,14 +29,26 @@ export async function POST(req: NextRequest) {
     const user = await db.collection("users").findOne({ _id: new ObjectId(payload.userId) });
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
+    // Check max 5 active plans
+    const activePlanCount = await db.collection("plans").countDocuments({
+      userId: payload.userId,
+      status: "active",
+    });
+
+    if (activePlanCount >= 5) {
+      return NextResponse.json(
+        { error: "Maximum of 5 active plans allowed. Please wait for a plan to complete." },
+        { status: 400 }
+      );
+    }
+
     const balance = user.balance ?? 0;
     if (amt > balance) {
       return NextResponse.json({ error: "Insufficient balance. Please deposit funds first." }, { status: 400 });
     }
 
     const now = new Date();
-    const endDate = new Date(now);
-    endDate.setDate(endDate.getDate() + plan.duration);
+    const endDate = new Date(now.getTime() + plan.duration * 24 * 60 * 60 * 1000);
     const newBalance = parseFloat((balance - amt).toFixed(2));
 
     // Deduct balance
@@ -56,17 +57,22 @@ export async function POST(req: NextRequest) {
       { $set: { balance: newBalance } }
     );
 
-    // Save plan as active
+    // Save plan
     await db.collection("plans").insertOne({
       userId: payload.userId,
       planId: plan.id,
       name: plan.name,
-      amount: amt,
-      profit: plan.profit,
+      price: plan.price,
+      totalProfit: plan.totalProfit,
+      dailyProfit: plan.dailyProfit,
+      profitPct: plan.profitPct,
       duration: plan.duration,
       status: "active",
+      source: "user", // user-purchased vs admin-loaded
       startDate: now,
       endDate,
+      lastAccrualDate: now,
+      accruedProfit: 0,
       createdAt: now,
     });
 
@@ -75,53 +81,41 @@ export async function POST(req: NextRequest) {
     // Emails
     try {
       await Promise.all([
-        // Admin
         transporter.sendMail({
           from: `"Aver Exchange" <${process.env.EMAIL_USER}>`,
           to: process.env.EMAIL_USER!,
           subject: `📈 New Plan Purchase — ${userName}`,
-          html: `
-            <div style="font-family:sans-serif;max-width:600px;">
-              <h2 style="color:#0f2744;">New Investment Plan Purchase</h2>
-              <table style="width:100%;border-collapse:collapse;">
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>User</b></td><td style="padding:8px;border:1px solid #ddd;">${userName}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Email</b></td><td style="padding:8px;border:1px solid #ddd;">${user.email}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Plan</b></td><td style="padding:8px;border:1px solid #ddd;">${plan.name}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Amount</b></td><td style="padding:8px;border:1px solid #ddd;">$${amt.toLocaleString()}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Daily Profit</b></td><td style="padding:8px;border:1px solid #ddd;">${plan.profit}%</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Duration</b></td><td style="padding:8px;border:1px solid #ddd;">${plan.duration} days</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Start Date</b></td><td style="padding:8px;border:1px solid #ddd;">${now.toLocaleDateString()}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>End Date</b></td><td style="padding:8px;border:1px solid #ddd;">${endDate.toLocaleDateString()}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Remaining Balance</b></td><td style="padding:8px;border:1px solid #ddd;">$${newBalance.toLocaleString()}</td></tr>
-              </table>
-            </div>
-          `,
+          html: `<div style="font-family:sans-serif;max-width:600px;">
+            <h2>New Investment Plan Purchase</h2>
+            <p><b>User:</b> ${userName}</p>
+            <p><b>Email:</b> ${user.email}</p>
+            <p><b>Plan:</b> ${plan.name}</p>
+            <p><b>Price:</b> $${plan.price.toLocaleString()}</p>
+            <p><b>Total Profit:</b> $${plan.totalProfit.toLocaleString()}</p>
+            <p><b>Daily Profit:</b> $${plan.dailyProfit}</p>
+            <p><b>Duration:</b> ${plan.duration} days</p>
+            <p><b>Ends:</b> ${endDate.toLocaleDateString()}</p>
+          </div>`,
         }),
-        // User
         transporter.sendMail({
           from: `"Aver Exchange" <${process.env.EMAIL_USER}>`,
           to: user.email,
-          subject: `🚀 Investment Plan Activated — ${plan.name}`,
-          html: `
-            <div style="font-family:sans-serif;max-width:600px;">
-              <h2 style="color:#0f2744;">Investment Plan Purchase Successful!</h2>
-              <p>Hi <b>${userName}</b>,</p>
-              <p>Your investment plan has been received. Our team is currently processing your package and it will be activated shortly.</p>
-              <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Plan</b></td><td style="padding:8px;border:1px solid #ddd;">${plan.name}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Amount Invested</b></td><td style="padding:8px;border:1px solid #ddd;">$${amt.toLocaleString()}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Daily Profit</b></td><td style="padding:8px;border:1px solid #ddd;">${plan.profit}% per day</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Duration</b></td><td style="padding:8px;border:1px solid #ddd;">${plan.duration} days</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Expected End Date</b></td><td style="padding:8px;border:1px solid #ddd;">${endDate.toLocaleDateString()}</td></tr>
-              </table>
-              <p style="color:#666;font-size:13px;">If you have any questions, contact our support team.</p>
-              <p>— The Aver Exchange Team</p>
-            </div>
-          `,
+          subject: `🚀 ${plan.name} Activated!`,
+          html: `<div style="font-family:sans-serif;max-width:600px;">
+            <h2>Investment Plan Activated!</h2>
+            <p>Hi <b>${userName}</b>,</p>
+            <p>Your <b>${plan.name}</b> has been activated successfully.</p>
+            <p><b>Investment:</b> $${plan.price.toLocaleString()}</p>
+            <p><b>Expected Profit:</b> $${plan.totalProfit.toLocaleString()} over ${plan.duration} days</p>
+            <p><b>Daily Earnings:</b> $${plan.dailyProfit}</p>
+            <p><b>Completion Date:</b> ${endDate.toLocaleDateString()}</p>
+            <p>When your plan completes, the profit will be credited to your account balance.</p>
+            <p>— The Aver Exchange Team</p>
+          </div>`,
         }),
       ]);
     } catch (e) {
-      console.error("Plan purchase mail error:", e);
+      console.error("Plan email error:", e);
     }
 
     return NextResponse.json({ success: true, newBalance });
