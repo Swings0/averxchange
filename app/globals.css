@@ -185,3 +185,15 @@ body {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+
+* {
+  box-sizing: border-box;
+}
+
