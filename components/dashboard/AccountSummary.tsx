@@ -49,7 +49,7 @@ const CARDS = (p: AccountSummaryProps) => [
   },
   {
     label: "Trading Accounts",
-    value: String(p.tradingAccounts),
+    value: fmt(p.tradingAccounts),
     icon: BarChart2,
     gradient: "from-sky-500/15 to-indigo-600/15",
     border: "border-sky-500/20",
@@ -97,7 +97,7 @@ export default function AccountSummary(props: AccountSummaryProps) {
               key={card.label}
               className={`
                 relative rounded-2xl border ${card.border}
-                bg-gradient-to-br ${card.gradient}
+                bg-linear-to-br ${card.gradient}
                 backdrop-blur-sm p-5
                 flex items-center justify-between
                 hover:scale-[1.02] transition-transform duration-200
@@ -112,7 +112,7 @@ export default function AccountSummary(props: AccountSummaryProps) {
               <div
                 className={`
                   w-11 h-11 rounded-xl flex items-center justify-center
-                  bg-white/5 border border-white/10 flex-shrink-0
+                  bg-white/5 border border-white/10 shrink-0
                   ${card.iconColor}
                 `}
               >

@@ -258,7 +258,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Tab bar */}
-        <div className="flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-2xl p-1.5">
+        <div className="flex items-center gap-1 bg-white/3 border border-white/6 rounded-2xl p-1.5">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -271,7 +271,7 @@ export default function ProfilePage() {
                 }
               `}
             >
-              <Icon size={15} className="flex-shrink-0" />
+              <Icon size={15} className="flex shrink-0" />
               <span className="hidden sm:inline">{label}</span>
             </button>
           ))}
@@ -279,7 +279,7 @@ export default function ProfilePage() {
 
         {/* ── Tab: Personal Settings ── */}
         {activeTab === "personal" && (
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 space-y-6">
+          <div className="rounded-2xl border border-white/6 bg-white/3 p-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field
                 label="Full Name"
@@ -322,7 +322,7 @@ export default function ProfilePage() {
             <button
               onClick={handlePersonalUpdate}
               disabled={loaderStatus === "loading"}
-              className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl transition-all"
+              className="flex items-center gap-2 bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl transition-all"
             >
               {loaderStatus === "loading"
                 ? <><Loader2 size={16} className="animate-spin" /> Updating...</>
@@ -334,7 +334,7 @@ export default function ProfilePage() {
 
         {/* ── Tab: Withdrawal Settings ── */}
         {activeTab === "withdrawal" && (
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 space-y-6">
+          <div className="rounded-2xl border border-white/6 bg-white/3 p-6 space-y-6">
             {/* Bank details */}
             <div>
               <p className="text-xs text-white/30 uppercase tracking-widest mb-4">Bank Details</p>
@@ -346,7 +346,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="h-px bg-white/[0.06]" />
+            <div className="h-px bg-white/6" />
 
             {/* Crypto addresses */}
             <div>
@@ -378,7 +378,7 @@ export default function ProfilePage() {
             <button
               onClick={handleWithdrawalUpdate}
               disabled={loaderStatus === "loading"}
-              className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl transition-all"
+              className="flex items-center gap-2 bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl transition-all"
             >
               {loaderStatus === "loading"
                 ? <><Loader2 size={16} className="animate-spin" /> Updating...</>
@@ -390,7 +390,7 @@ export default function ProfilePage() {
 
         {/* ── Tab: Password / Security ── */}
         {activeTab === "password" && (
-          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 space-y-6">
+          <div className="rounded-2xl border border-white/6 bg-white/3 p-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <PasswordField label="Old Password" value={pw.old} onChange={(v) => setPw((p) => ({ ...p, old: v }))} required />
               <PasswordField label="New Password" value={pw.new} onChange={(v) => setPw((p) => ({ ...p, new: v }))} required />
@@ -406,7 +406,7 @@ export default function ProfilePage() {
             <button
               onClick={handlePasswordUpdate}
               disabled={loaderStatus === "loading"}
-              className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl transition-all"
+              className="flex items-center gap-2 bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-50 text-white font-bold px-6 py-3 rounded-xl transition-all"
             >
               {loaderStatus === "loading"
                 ? <><Loader2 size={16} className="animate-spin" /> Updating...</>
@@ -414,7 +414,7 @@ export default function ProfilePage() {
               }
             </button>
 
-            <div className="h-px bg-white/[0.06]" />
+            <div className="h-px bg-white/6" />
 
             <Link
               href="/dashboard/security"

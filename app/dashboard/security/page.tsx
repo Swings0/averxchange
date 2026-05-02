@@ -97,7 +97,7 @@ export default function SecurityPage() {
         </div>
 
         {/* Browser Sessions */}
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 space-y-4">
+        <div className="rounded-2xl border border-white/6 bg-white/3 p-6 space-y-4">
           <div className="flex items-center gap-3 mb-1">
             <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
               <Monitor size={17} className="text-cyan-400" />
@@ -115,8 +115,8 @@ export default function SecurityPage() {
           </p>
 
           {/* Current session */}
-          <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
+          <div className="rounded-xl border border-white/6 bg-white/3 p-4 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
               <Monitor size={15} className="text-emerald-400" />
             </div>
             <div className="flex-1">

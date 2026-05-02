@@ -112,7 +112,7 @@ export default function TradingPlansPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* ── Left: Form ── */}
           <div className="lg:col-span-2 space-y-5">
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 space-y-6">
+            <div className="rounded-2xl border border-white/6 bg-white/3 p-6 space-y-6">
 
               {/* Plan dropdown */}
               <div>
@@ -123,7 +123,7 @@ export default function TradingPlansPage() {
                     className="w-full flex items-center justify-between gap-3 bg-white/5 border border-white/10 rounded-xl px-5 py-4 hover:border-white/20 transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${selectedPlan.color}`} />
+                      <div className={`w-3 h-3 rounded-full bg-linear-to-r ${selectedPlan.color}`} />
                       <span className="font-semibold text-white">{selectedPlan.name}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${selectedPlan.badge}`}>
                         {selectedPlan.profitPct}%/day
@@ -140,7 +140,7 @@ export default function TradingPlansPage() {
                           className={`w-full flex items-center justify-between px-5 py-3.5 hover:bg-white/10 transition text-left ${selectedPlan.id === plan.id ? "bg-white/10" : ""}`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-r ${plan.color}`} />
+                            <div className={`w-2.5 h-2.5 rounded-full bg-linear-to-r ${plan.color}`} />
                             <span className="text-sm font-medium text-white">{plan.name}</span>
                           </div>
                           <div className="text-right">
@@ -155,7 +155,7 @@ export default function TradingPlansPage() {
               </div>
 
               {/* Plan price display */}
-              <div className={`rounded-2xl bg-gradient-to-r ${selectedPlan.color} p-5`}>
+              <div className={`rounded-2xl bg-linear-to-r ${selectedPlan.color} p-5`}>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <p className="text-white/60 text-xs mb-1">Investment</p>
@@ -175,7 +175,7 @@ export default function TradingPlansPage() {
               {/* Payment method */}
               <div>
                 <label className="text-sm text-white/50 block mb-2">Payment Method</label>
-                <div className={`flex items-center gap-3 px-5 py-4 rounded-xl border bg-gradient-to-r ${selectedPlan.color} bg-opacity-10 ${selectedPlan.border}`}>
+                <div className={`flex items-center gap-3 px-5 py-4 rounded-xl border bg-linear-to-r ${selectedPlan.color} bg-opacity-10 ${selectedPlan.border}`}>
                   <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
                     <span className="text-white text-sm font-bold">$</span>
                   </div>
@@ -188,7 +188,7 @@ export default function TradingPlansPage() {
 
               {error && (
                 <p className="flex items-center gap-2 text-sm text-rose-400">
-                  <AlertCircle size={14} className="flex-shrink-0" /> {error}
+                  <AlertCircle size={14} className="flex shrink-0" /> {error}
                 </p>
               )}
             </div>
@@ -196,8 +196,8 @@ export default function TradingPlansPage() {
 
           {/* ── Right: Details panel ── */}
           <div>
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden sticky top-20">
-              <div className={`bg-gradient-to-r ${selectedPlan.color} px-5 py-4`}>
+            <div className="rounded-2xl border border-white/6 bg-white/3 overflow-hidden sticky top-20">
+              <div className={`bg-linear-to-r ${selectedPlan.color} px-5 py-4`}>
                 <p className="text-sm font-bold text-white">Your Investment Details</p>
               </div>
               <div className="p-5 space-y-4">
@@ -216,7 +216,7 @@ export default function TradingPlansPage() {
                 <Row label="Amount to Invest" value={`$${selectedPlan.price.toLocaleString()}`} />
 
                 <button onClick={handleBuy} disabled={buying || !canBuy}
-                  className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold bg-gradient-to-r ${selectedPlan.color} text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-2`}>
+                  className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold bg-linear-to-r ${selectedPlan.color} text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all mt-2`}>
                   {!canBuy
                     ? <><Lock size={15} /> Max Plans Reached</>
                     : buying
@@ -243,5 +243,5 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
 }
 
 function Divider() {
-  return <div className="h-px bg-white/[0.06]" />;
+  return <div className="h-px bg-white/6" />;
 }

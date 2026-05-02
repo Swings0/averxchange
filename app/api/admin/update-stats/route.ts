@@ -53,7 +53,10 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      return NextResponse.json({ success: true, message: `${field} scheduled to clear` });
+      return NextResponse.json({
+        success: true,
+        message: (!delayMs || delayMs === 0) ? `${field} cleared to $0` : `${field} scheduled to clear`,
+      });
     }
 
     const numValue = parseFloat(value);

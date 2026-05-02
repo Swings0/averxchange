@@ -101,7 +101,7 @@ export default function TransactionsPage() {
       </div>
 
       {/* Filter tabs */}
-      <div className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-2xl p-1.5 w-fit">
+      <div className="flex items-center gap-2 bg-white/3 border border-white/6 rounded-2xl p-1.5 w-fit">
         {(["all", "deposit", "withdrawal"] as const).map((f) => (
           <button
             key={f}
@@ -118,9 +118,9 @@ export default function TransactionsPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
+      <div className="rounded-2xl border border-white/6 bg-white/3 overflow-hidden">
         {/* Header */}
-        <div className="grid grid-cols-12 px-5 py-3 border-b border-white/[0.06] bg-white/[0.02]">
+        <div className="grid grid-cols-12 px-5 py-3 border-b border-white/6 bg-white/2">
           <span className="col-span-2 text-[11px] text-white/30 uppercase tracking-wider">Date</span>
           <span className="col-span-3 text-[11px] text-white/30 uppercase tracking-wider">Type</span>
           <span className="col-span-3 text-[11px] text-white/30 uppercase tracking-wider">Method</span>
@@ -141,7 +141,7 @@ export default function TransactionsPage() {
           filtered.map((tx) => (
             <div
               key={tx.id}
-              className="grid grid-cols-12 px-5 py-4 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.02] transition-colors items-center"
+              className="grid grid-cols-12 px-5 py-4 border-b border-white/4 last:border-0 hover:bg-white/2 transition-colors items-center"
             >
               {/* Date */}
               <div className="col-span-2">
@@ -155,7 +155,7 @@ export default function TransactionsPage() {
 
               {/* Type */}
               <div className="col-span-3 flex items-center gap-2">
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
                   tx.type === "deposit"
                     ? "bg-emerald-500/20 text-emerald-400"
                     : "bg-rose-500/20 text-rose-400"

@@ -150,7 +150,7 @@ export default function WithdrawalPage() {
           </button>
 
           {showActive && (
-            <div className="px-5 pb-5 border-t border-white/[0.06]">
+            <div className="px-5 pb-5 border-t border-white/6">
               {activeWs.length === 0 ? (
                 <p className="text-sm text-white/30 py-6 text-center">No active withdrawals</p>
               ) : (
@@ -172,10 +172,10 @@ export default function WithdrawalPage() {
                   {/* List */}
                   <div className="space-y-2">
                     {activeWs.map((w) => (
-                      <div key={w.id} className="flex items-center justify-between rounded-xl bg-white/5 border border-white/[0.06] px-4 py-3">
+                      <div key={w.id} className="flex items-center justify-between rounded-xl bg-white/5 border border-white/6 px-4 py-3">
                         <div>
                           <p className="text-sm font-medium text-white">{w.method}</p>
-                          <p className="text-xs text-white/30 font-mono truncate max-w-[180px]">{w.walletAddress}</p>
+                          <p className="text-xs text-white/30 font-mono truncate max-w-45">{w.walletAddress}</p>
                           <p className="text-xs text-white/20">{new Date(w.createdAt).toLocaleDateString()}</p>
                         </div>
                         <div className="text-right">
@@ -195,15 +195,15 @@ export default function WithdrawalPage() {
         {step === 1 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {METHODS.map((m) => (
-              <div key={m.id} className="rounded-2xl border border-white/[0.06] overflow-hidden hover:border-white/20 hover:scale-[1.01] transition-all duration-200">
-                <div className={`bg-gradient-to-r ${m.gradient} p-5 flex items-center gap-4`}>
+              <div key={m.id} className="rounded-2xl border border-white/6 overflow-hidden hover:border-white/20 hover:scale-[1.01] transition-all duration-200">
+                <div className={`bg-linear-to-r ${m.gradient} p-5 flex items-center gap-4`}>
                   <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-bold text-white">{m.icon}</div>
                   <div>
                     <p className="text-base font-bold text-white">{m.label}</p>
                     <p className="text-xs text-white/60">{m.symbol}</p>
                   </div>
                 </div>
-                <div className="bg-white/[0.03] p-5 space-y-3">
+                <div className="bg-white/3 p-5 space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="flex items-center gap-2 text-white/50"><ChevronDown size={14} className={m.accent} />Minimum</span>
                     <span className="font-semibold text-white">${m.min}</span>
@@ -218,7 +218,7 @@ export default function WithdrawalPage() {
                   </div>
                   <button
                     onClick={() => handleSelect(m)}
-                    className={`w-full flex items-center justify-center gap-2 bg-gradient-to-r ${m.gradient} text-white font-bold py-3 rounded-xl hover:opacity-90 transition-all mt-1`}
+                    className={`w-full flex items-center justify-center gap-2 bg-linear-to-r ${m.gradient} text-white font-bold py-3 rounded-xl hover:opacity-90 transition-all mt-1`}
                   >
                     <ArrowUpRight size={16} /> Select This Method
                   </button>
@@ -231,7 +231,7 @@ export default function WithdrawalPage() {
         {/* STEP 2 — Details form */}
         {step === 2 && selected && (
           <div className="max-w-xl mx-auto">
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 space-y-6">
+            <div className="rounded-2xl border border-white/6 bg-white/3 p-6 space-y-6">
               <button onClick={() => { setStep(1); setError(""); }} className="flex items-center gap-1.5 text-sm text-white/40 hover:text-white transition-colors">
                 <ChevronLeft size={16} /> Back to methods
               </button>
@@ -279,7 +279,7 @@ export default function WithdrawalPage() {
                 {/* Wallet hint */}
                 {!savedWallet ? (
                   <p className="text-xs text-amber-400/80 flex items-start gap-1.5">
-                    <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
+                    <AlertCircle size={12} className="mt-0.5 flex shrink-0" />
                     No default {selected.label} address saved. Enter your wallet or save one in{" "}
                     <Link href="/dashboard/profile" className="underline hover:text-amber-400 ml-1">Profile → Withdrawal Settings</Link>.
                   </p>
@@ -293,7 +293,7 @@ export default function WithdrawalPage() {
               <button
                 onClick={handleSubmit}
                 disabled={loaderStatus === "loading"}
-                className={`w-full flex items-center justify-center gap-2 bg-gradient-to-r ${selected.gradient} text-white font-bold py-4 rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all`}
+                className={`w-full flex items-center justify-center gap-2 bg-linear-to-r ${selected.gradient} text-white font-bold py-4 rounded-xl hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all`}
               >
                 {loaderStatus === "loading"
                   ? <><Loader2 size={18} className="animate-spin" /> Processing...</>

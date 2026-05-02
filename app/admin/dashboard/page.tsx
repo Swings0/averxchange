@@ -5,7 +5,7 @@ import {
   Search, Save, Trash2, Clock, Plus, Minus,
   CheckCircle2, AlertCircle, Loader2, LogOut,
   TrendingUp, Shield, ChevronDown, X, Eye,
-  Package, List, XCircle,
+  Package, List, XCircle, Pencil,
 } from "lucide-react";
 import { PLANS } from "@/lib/plans";
 
@@ -25,41 +25,277 @@ type Delay = { days: number; hours: number; mins: number; secs: number };
 const toMs = (d: Delay) =>
   (d.days * 86400 + d.hours * 3600 + d.mins * 60 + d.secs) * 1000;
 
-// ─── User stats modal ─────────────────────────────────────────────
+// ─── Modal Transaction Row ────────────────────────────────────────
+function ModalTransactionRow({
+  tx,
+  type,
+  onRemove,
+  onStatusChange,
+}: {
+  tx: any;
+  type: "deposit" | "withdrawal";
+  onRemove: (id: string) => void;
+  onStatusChange: (id: string, newStatus: string) => void;
+}) {
+  const [acting, setActing] = useState<string | null>(null);
+
+  const handleAction = async (action: "approve" | "decline" | "delete") => {
+    setActing(action);
+    try {
+      if (action === "delete") {
+        const res = await fetch("/api/admin/update-transaction", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transactionId: tx.id }),
+        });
+        const data = await res.json();
+        if (res.ok) onRemove(tx.id);
+        else console.error(data.error);
+      } else {
+        const res = await fetch("/api/admin/update-transaction", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transactionId: tx.id, action }),
+        });
+        const data = await res.json();
+        if (res.ok) onStatusChange(tx.id, action === "approve" ? "approved" : "declined");
+        else console.error(data.error);
+      }
+    } catch (e) { console.error(e); }
+    finally { setActing(null); }
+  };
+
+  const statusColors: Record<string, string> = {
+    approved: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    pending:  "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    declined: "bg-rose-500/20 text-rose-400 border-rose-500/30",
+  };
+
+  return (
+    <div className="bg-white/5 border border-white/[0.06] rounded-xl px-4 py-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-white">
+            ${tx.amount?.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+          </p>
+          <p className="text-xs text-white/30">
+            {tx.method || tx.paymentMethod || "—"} · {new Date(tx.date || tx.createdAt).toLocaleDateString()}
+          </p>
+          {type === "withdrawal" && tx.walletAddress && (
+            <p className="text-[10px] text-white/20 font-mono truncate max-w-[180px]">{tx.walletAddress}</p>
+          )}
+        </div>
+        <span className={`text-xs px-2 py-0.5 rounded-full border ${statusColors[tx.status] ?? statusColors.pending}`}>
+          {tx.status}
+        </span>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Approve — for pending withdrawals */}
+        {type === "withdrawal" && tx.status === "pending" && (
+          <button
+            onClick={() => handleAction("approve")}
+            disabled={!!acting}
+            className="flex items-center gap-1 text-[10px] px-2.5 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg hover:bg-emerald-500/30 disabled:opacity-40 transition"
+          >
+            {acting === "approve" ? <Loader2 size={10} className="animate-spin" /> : <CheckCircle2 size={10} />}
+            Approve
+          </button>
+        )}
+        {/* Decline — for pending withdrawals */}
+        {type === "withdrawal" && tx.status === "pending" && (
+          <button
+            onClick={() => handleAction("decline")}
+            disabled={!!acting}
+            className="flex items-center gap-1 text-[10px] px-2.5 py-1 bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-lg hover:bg-amber-500/30 disabled:opacity-40 transition"
+          >
+            {acting === "decline" ? <Loader2 size={10} className="animate-spin" /> : <XCircle size={10} />}
+            Decline
+          </button>
+        )}
+        {/* Delete — always available */}
+        <button
+          onClick={() => handleAction("delete")}
+          disabled={!!acting}
+          className="flex items-center gap-1 text-[10px] px-2.5 py-1 bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-lg hover:bg-rose-500/30 disabled:opacity-40 transition"
+        >
+          {acting === "delete" ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── User Stats Modal ─────────────────────────────────────────────
 function UserStatsModal({ user, onClose }: { user: any; onClose: () => void }) {
   const fmt = (n: number) => "$" + (n ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 });
 
+  const STAT_FIELDS = [
+    { key: "balance",         label: "Account Balance"  },
+    { key: "totalProfit",     label: "Total Profit"     },
+    { key: "bonus",           label: "Bonus"            },
+    { key: "tradingAccounts", label: "Trading Account"  },
+    { key: "referralBonus",   label: "Referral Bonus"   },
+    { key: "totalDeposit",    label: "Total Deposit"    },
+    { key: "totalWithdrawal", label: "Total Withdrawal" },
+  ];
+
+  // Per-field edit state
+  const [editing, setEditing] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [localStats, setLocalStats] = useState<Record<string, number>>({
+    balance: user.balance ?? 0,
+    totalProfit: user.totalProfit ?? 0,
+    bonus: user.bonus ?? 0,
+    tradingAccounts: user.tradingAccounts ?? 0,
+    referralBonus: user.referralBonus ?? 0,
+    totalDeposit: user.totalDeposit ?? 0,
+    totalWithdrawal: user.totalWithdrawal ?? 0,
+  });
+  const [localDeposits, setLocalDeposits] = useState<any[]>(user.deposits ?? []);
+  const [localWithdrawals, setLocalWithdrawals] = useState<any[]>(user.withdrawals ?? []);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
+  const removeTransaction = (id: string, type: "deposit" | "withdrawal") => {
+    if (type === "deposit") setLocalDeposits((prev) => prev.filter((d) => d.id !== id));
+    else setLocalWithdrawals((prev) => prev.filter((w) => w.id !== id));
+  };
+
+  const updateTxStatus = (id: string, newStatus: string, type: "deposit" | "withdrawal") => {
+    if (type === "deposit") {
+      setLocalDeposits((prev) => prev.map((d) => d.id === id ? { ...d, status: newStatus } : d));
+    } else {
+      setLocalWithdrawals((prev) => prev.map((w) => w.id === id ? { ...w, status: newStatus } : w));
+    }
+  };
+
+  const showLocalToast = (msg: string, type: "success" | "error") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleSave = async (fieldKey: string) => {
+    const val = editing[fieldKey];
+    if (!val && val !== "0") return;
+    setSaving(fieldKey);
+    try {
+      const res = await fetch("/api/admin/update-stats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, field: fieldKey, value: val, delayMs: 0 }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showLocalToast(data.error, "error"); return; }
+      setLocalStats((prev) => ({ ...prev, [fieldKey]: parseFloat(val) }));
+      setEditing((prev) => { const n = { ...prev }; delete n[fieldKey]; return n; });
+      showLocalToast("Updated!", "success");
+    } catch { showLocalToast("Error", "error"); }
+    finally { setSaving(null); }
+  };
+
+  const handleClear = async (fieldKey: string) => {
+    setSaving(`clear-${fieldKey}`);
+    try {
+      const res = await fetch("/api/admin/update-stats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, field: fieldKey, clearField: true, delayMs: 0 }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showLocalToast(data.error, "error"); return; }
+      setLocalStats((prev) => ({ ...prev, [fieldKey]: 0 }));
+      showLocalToast("Cleared!", "success");
+    } catch { showLocalToast("Error", "error"); }
+    finally { setSaving(null); }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 py-6 overflow-y-auto">
-      <div className="bg-[#0f1f35] border border-white/10 rounded-3xl w-full max-w-2xl shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 backdrop-blur-sm px-4 pt-16 pb-6 overflow-y-auto">
+      <div className="bg-[#0f1f35] border border-white/10 rounded-3xl w-full max-w-2xl shadow-2xl my-auto">
+
+        {/* Local toast */}
+        {toast && (
+          <div className={`absolute top-4 left-1/2 -translate-x-1/2 z-10 px-5 py-2 rounded-full text-xs font-medium border ${
+            toast.type === "success"
+              ? "bg-emerald-500/20 border-emerald-500/30 text-emerald-300"
+              : "bg-rose-500/20 border-rose-500/30 text-rose-300"
+          }`}>{toast.msg}</div>
+        )}
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] sticky top-0 bg-[#0f1f35] rounded-t-3xl z-10">
           <div>
-            <h2 className="text-lg font-bold text-white">{user.username}</h2>
+            <h2 className="text-base font-bold text-white">{user.username}</h2>
             <p className="text-xs text-white/40 font-mono">{user.email}</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition">
-            <X size={18} />
+          <button
+            onClick={onClose}
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all flex-shrink-0"
+          >
+            <X size={16} />
           </button>
         </div>
 
         <div className="p-6 space-y-6">
-          {/* Account stats */}
+
+          {/* Account stats with inline edit + clear */}
           <div>
             <p className="text-xs text-white/30 uppercase tracking-widest mb-3">Account Stats</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {[
-                { label: "Account Balance",  value: fmt(user.balance)        },
-                { label: "Total Profit",     value: fmt(user.totalProfit)    },
-                { label: "Trading Account",  value: fmt(user.tradingAccounts) },
-                { label: "Bonus",            value: fmt(user.bonus)          },
-                { label: "Referral Bonus",   value: fmt(user.referralBonus)  },
-                { label: "Total Deposit",    value: fmt(user.totalDeposit)   },
-                { label: "Total Withdrawal", value: fmt(user.totalWithdrawal) },
-              ].map(({ label, value }) => (
-                <div key={label} className="bg-white/5 border border-white/[0.06] rounded-xl p-3">
-                  <p className="text-xs text-white/40 mb-1">{label}</p>
-                  <p className="text-sm font-bold text-white">{value}</p>
+            <div className="space-y-2">
+              {STAT_FIELDS.map(({ key, label }) => (
+                <div key={key} className="flex items-center gap-3 bg-white/5 border border-white/[0.06] rounded-xl px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-white/40 mb-0.5">{label}</p>
+                    {editing[key] !== undefined ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-white/40 text-sm">$</span>
+                        <input
+                          type="number"
+                          value={editing[key]}
+                          onChange={(e) => setEditing((prev) => ({ ...prev, [key]: e.target.value }))}
+                          onKeyDown={(e) => e.key === "Enter" && handleSave(key)}
+                          autoFocus
+                          className="flex-1 bg-white/10 border border-cyan-500/40 rounded-lg px-2 py-1 text-sm text-white focus:outline-none"
+                        />
+                        <button
+                          onClick={() => handleSave(key)}
+                          disabled={saving === key}
+                          className="text-xs px-2.5 py-1 bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-500/30 disabled:opacity-40 transition flex items-center gap-1"
+                        >
+                          {saving === key ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditing((prev) => { const n = { ...prev }; delete n[key]; return n; })}
+                          className="text-xs px-2 py-1 text-white/30 hover:text-white transition"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-bold text-white">{fmt(localStats[key])}</p>
+                    )}
+                  </div>
+                  {editing[key] === undefined && (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => setEditing((prev) => ({ ...prev, [key]: String(localStats[key]) }))}
+                        className="text-[10px] px-2 py-1 bg-cyan-500/15 text-cyan-400 border border-cyan-500/20 rounded-lg hover:bg-cyan-500/25 transition flex items-center gap-1"
+                      >
+                        <Pencil size={10} /> Edit
+                      </button>
+                      <button
+                        onClick={() => handleClear(key)}
+                        disabled={saving === `clear-${key}`}
+                        className="text-[10px] px-2 py-1 bg-rose-500/15 text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500/25 disabled:opacity-40 transition flex items-center gap-1"
+                      >
+                        {saving === `clear-${key}` ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                        Clear
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -67,7 +303,9 @@ function UserStatsModal({ user, onClose }: { user: any; onClose: () => void }) {
 
           {/* Active plans */}
           <div>
-            <p className="text-xs text-white/30 uppercase tracking-widest mb-3">Active Plans ({user.plans?.length ?? 0})</p>
+            <p className="text-xs text-white/30 uppercase tracking-widest mb-3">
+              Active Plans ({user.plans?.length ?? 0})
+            </p>
             {!user.plans?.length ? (
               <p className="text-sm text-white/30 bg-white/5 rounded-xl px-4 py-3">No active plans</p>
             ) : (
@@ -92,23 +330,21 @@ function UserStatsModal({ user, onClose }: { user: any; onClose: () => void }) {
 
           {/* Deposits */}
           <div>
-            <p className="text-xs text-white/30 uppercase tracking-widest mb-3">Recent Deposits</p>
-            {!user.deposits?.length ? (
+            <p className="text-xs text-white/30 uppercase tracking-widest mb-3">
+              Deposits ({localDeposits.length})
+            </p>
+            {!localDeposits.length ? (
               <p className="text-sm text-white/30 bg-white/5 rounded-xl px-4 py-3">No deposits</p>
             ) : (
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {user.deposits.map((d: any) => (
-                  <div key={d.id} className="flex items-center justify-between bg-white/5 border border-white/[0.06] rounded-xl px-4 py-2.5">
-                    <div>
-                      <p className="text-sm text-white">${d.amount?.toLocaleString()}</p>
-                      <p className="text-xs text-white/30">{d.method} · {new Date(d.date).toLocaleDateString()}</p>
-                    </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                      d.status === "approved"
-                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                        : "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                    }`}>{d.status}</span>
-                  </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {localDeposits.map((d) => (
+                  <ModalTransactionRow
+                    key={d.id}
+                    tx={d}
+                    type="deposit"
+                    onRemove={(id) => removeTransaction(id, "deposit")}
+                    onStatusChange={(id, status) => updateTxStatus(id, status, "deposit")}
+                  />
                 ))}
               </div>
             )}
@@ -116,24 +352,21 @@ function UserStatsModal({ user, onClose }: { user: any; onClose: () => void }) {
 
           {/* Withdrawals */}
           <div>
-            <p className="text-xs text-white/30 uppercase tracking-widest mb-3">Recent Withdrawals</p>
-            {!user.withdrawals?.length ? (
+            <p className="text-xs text-white/30 uppercase tracking-widest mb-3">
+              Withdrawals ({localWithdrawals.length})
+            </p>
+            {!localWithdrawals.length ? (
               <p className="text-sm text-white/30 bg-white/5 rounded-xl px-4 py-3">No withdrawals</p>
             ) : (
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {user.withdrawals.map((w: any) => (
-                  <div key={w.id} className="flex items-center justify-between bg-white/5 border border-white/[0.06] rounded-xl px-4 py-2.5">
-                    <div>
-                      <p className="text-sm text-white">${w.amount?.toLocaleString()}</p>
-                      <p className="text-xs text-white/30 font-mono truncate max-w-[160px]">{w.walletAddress}</p>
-                      <p className="text-xs text-white/20">{new Date(w.date).toLocaleDateString()}</p>
-                    </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                      w.status === "approved"
-                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
-                        : "bg-amber-500/20 text-amber-400 border-amber-500/30"
-                    }`}>{w.status}</span>
-                  </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {localWithdrawals.map((w) => (
+                  <ModalTransactionRow
+                    key={w.id}
+                    tx={w}
+                    type="withdrawal"
+                    onRemove={(id) => removeTransaction(id, "withdrawal")}
+                    onStatusChange={(id, status) => updateTxStatus(id, status, "withdrawal")}
+                  />
                 ))}
               </div>
             )}
@@ -144,7 +377,7 @@ function UserStatsModal({ user, onClose }: { user: any; onClose: () => void }) {
   );
 }
 
-// ─── Clear modal ──────────────────────────────────────────────────
+// ─── Clear Modal ──────────────────────────────────────────────────
 function ClearModal({ field, onCancel, onConfirm, loading }: {
   field: string; onCancel: () => void; onConfirm: () => void; loading: boolean;
 }) {
@@ -435,7 +668,7 @@ export default function AdminDashboard() {
   }, []);
 
   const handleDepositAction = async (transactionId: string, action: "approve" | "decline") => {
-    setProcessingDeposit(transactionId);
+    setProcessingDeposit(`${transactionId}-${action}`);
     try {
       const res = await fetch("/api/admin/deposits", {
         method: "POST",
@@ -627,18 +860,22 @@ export default function AdminDashboard() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleDepositAction(d.id, "approve")}
-                      disabled={processingDeposit === d.id}
+                      disabled={!!processingDeposit}
                       className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-semibold hover:bg-emerald-500/30 disabled:opacity-40 transition-all"
                     >
-                      {processingDeposit === d.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={13} />}
+                      {processingDeposit === `${d.id}-approve`
+                        ? <Loader2 size={12} className="animate-spin" />
+                        : <CheckCircle2 size={13} />}
                       Approve
                     </button>
                     <button
                       onClick={() => handleDepositAction(d.id, "decline")}
-                      disabled={processingDeposit === d.id}
+                      disabled={!!processingDeposit}
                       className="flex items-center gap-1.5 px-4 py-2 bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-xl text-xs font-semibold hover:bg-rose-500/30 disabled:opacity-40 transition-all"
                     >
-                      {processingDeposit === d.id ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={13} />}
+                      {processingDeposit === `${d.id}-decline`
+                        ? <Loader2 size={12} className="animate-spin" />
+                        : <XCircle size={13} />}
                       Decline
                     </button>
                   </div>

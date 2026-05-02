@@ -60,7 +60,7 @@ export default function ReferralsPage() {
       </div>
 
       {/* Referral link */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-6 space-y-4">
+      <div className="rounded-2xl border border-white/6 bg-white/3 p-6 space-y-4">
         <p className="text-sm text-white/60 text-center">You can refer users by sharing your referral link:</p>
 
         <div className="flex items-center gap-2">
@@ -70,7 +70,7 @@ export default function ReferralsPage() {
           <button
             onClick={handleCopy}
             disabled={!referralLink}
-            className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-semibold transition-all flex-shrink-0 ${
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-semibold transition-all shrink-0 ${
               copied
                 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
                 : "bg-white/10 text-white border-white/10 hover:bg-white/15"
@@ -88,7 +88,7 @@ export default function ReferralsPage() {
         </div>
 
         {/* Referred by */}
-        <div className="text-center space-y-2 pt-2 border-t border-white/[0.06]">
+        <div className="text-center space-y-2 pt-2 border-t border-white/6">
           <p className="text-sm text-white/50">You were referred by</p>
           <div className="flex flex-col items-center gap-1">
             <div className="w-10 h-10 rounded-full bg-white/10 border border-white/10 flex items-center justify-center">
@@ -107,8 +107,8 @@ export default function ReferralsPage() {
           Your Referrals <span className="text-white/30 normal-case font-normal tracking-normal">({data?.referrals.length ?? 0})</span>
         </h2>
 
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] overflow-hidden">
-          <div className="grid grid-cols-4 px-5 py-3 border-b border-white/[0.06] bg-white/[0.02]">
+        <div className="rounded-2xl border border-white/6 bg-white/3 overflow-hidden">
+          <div className="grid grid-cols-4 px-5 py-3 border-b border-white/6 bg-white/2">
             {["Client Name", "Status", "Bonus Earned", "Date Registered"].map((h) => (
               <span key={h} className="text-[11px] text-white/30 uppercase tracking-wider">{h}</span>
             ))}
@@ -121,7 +121,7 @@ export default function ReferralsPage() {
             </div>
           ) : (
             data.referrals.map((r) => (
-              <div key={r.id} className="grid grid-cols-4 px-5 py-4 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.03] transition-colors items-center">
+              <div key={r.id} className="grid grid-cols-4 px-5 py-4 border-b border-white/4 last:border-0 hover:bg-white/3 transition-colors items-center">
                 <div>
                   <p className="text-sm font-medium text-white">{r.name}</p>
                   <p className="text-xs text-white/30">{r.email}</p>

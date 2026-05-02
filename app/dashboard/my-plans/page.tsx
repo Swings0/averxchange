@@ -59,9 +59,9 @@ function PlanCard({ plan }: { plan: ActivePlan }) {
   const earnedSoFar = parseFloat(((plan.dailyProfit * daysElapsed)).toFixed(2));
 
   return (
-    <div className={`rounded-2xl border ${border} overflow-hidden bg-white/[0.03]`}>
+    <div className={`rounded-2xl border ${border} overflow-hidden bg-white/3`}>
       {/* Header */}
-      <div className={`bg-gradient-to-r ${gradient} p-5`}>
+      <div className={`bg-linear-to-r ${gradient} p-5`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
@@ -122,7 +122,7 @@ function PlanCard({ plan }: { plan: ActivePlan }) {
           </div>
           <div className="h-2 bg-white/10 rounded-full overflow-hidden">
             <div
-              className={`h-full bg-gradient-to-r ${gradient} rounded-full transition-all duration-1000`}
+              className={`h-full bg-linear-to-r ${gradient} rounded-full transition-all duration-1000`}
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -238,7 +238,7 @@ export default function MyPlansPage() {
           <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : plans.length === 0 ? (
-        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-16 text-center">
+        <div className="rounded-2xl border border-white/6 bg-white/3 p-16 text-center">
           <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-5">
             <TrendingUp size={28} className="text-white/20" />
           </div>
@@ -246,7 +246,7 @@ export default function MyPlansPage() {
             You do not have an investment plan at the moment or no value match your query.
           </p>
           <Link
-            href="/dashboard/trading-plans"
+            href="/dashboard/purchase-plan"
             className="inline-block mt-4 bg-white text-[#080f1a] text-sm font-bold px-8 py-3 rounded-xl hover:bg-white/90 transition-colors"
           >
             Buy a plan

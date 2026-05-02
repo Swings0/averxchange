@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Download,
@@ -108,7 +108,19 @@ export default function DepositPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [balance, setBalance] = useState(0);
+  const [totalDeposit, setTotalDeposit] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => {
+        setBalance(d.balance ?? 0);
+        setTotalDeposit(d.totalDeposit ?? 0);
+      })
+      .catch(console.error);
+  }, []);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(selected.address);
@@ -119,8 +131,8 @@ export default function DepositPage() {
   const handleProceed = () => {
     setError("");
     const amt = parseFloat(amount);
-    if (!amount || isNaN(amt) || amt < 100) {
-      setError("Minimum deposit is $100");
+    if (!amount || isNaN(amt) || amt < 5) {
+      setError("Minimum deposit is $5");
       return;
     }
     setStep(2);
@@ -192,7 +204,9 @@ export default function DepositPage() {
           </div>
           <div className="text-right">
             <p className="text-xs text-white/30 uppercase tracking-wider">Current Balance</p>
-            <p className="text-lg font-bold text-white">$0.00</p>
+            <p className="text-lg font-bold text-white">
+              ${balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            </p>
           </div>
         </div>
 
@@ -222,7 +236,7 @@ export default function DepositPage() {
                       className="w-full bg-white/5 border border-white/10 rounded-xl pl-8 pr-4 py-3.5 text-white placeholder-white/20 focus:outline-none focus:border-cyan-500/50 focus:bg-white/8 transition-all"
                     />
                   </div>
-                  <p className="text-xs text-white/30 mt-1.5">Minimum deposit: $100</p>
+                  <p className="text-xs text-white/30 mt-1.5">Minimum deposit: $5</p>
                   {error && <p className="text-xs text-rose-400 mt-1.5">{error}</p>}
                 </div>
 
@@ -414,7 +428,9 @@ export default function DepositPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-white/40 mb-1">Total Deposited</p>
-                    <p className="text-xl font-bold text-white">$0.00</p>
+                    <p className="text-xl font-bold text-white">
+                      ${totalDeposit.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
                     <span className="text-emerald-400 text-lg">💵</span>
@@ -424,7 +440,7 @@ export default function DepositPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-white/40 mb-1">Minimum Deposit</p>
-                    <p className="text-xl font-bold text-white">$100</p>
+                    <p className="text-xl font-bold text-white">$5</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center">
                     <Download size={18} className="text-cyan-400" />
