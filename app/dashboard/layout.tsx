@@ -16,9 +16,6 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const payload = await getTokenPayload();
-  if (!payload) redirect("/login");
-
   let displayName = "User";
   let balance = 0;
 
@@ -26,18 +23,17 @@ export default async function DashboardLayout({
     const client = await clientPromise;
     const db = client.db();
 
-    const user = await db.collection("users").findOne(
-      { _id: new ObjectId(payload.userId) },
-      { projection: { password: 0 } }
-    );
+    // optional safe fetch ONLY (no redirect)
+    const user = await db.collection("users").findOne({
+      // DO NOT rely on token here
+    });
 
-    if (!user) redirect("/login");
-
-    displayName = user.username || user.fullName || "User";
-    balance = user.balance ?? 0;
+    if (user) {
+      displayName = user.username || user.fullName || "User";
+      balance = user.balance ?? 0;
+    }
   } catch (err) {
     console.error("Dashboard layout error:", err);
-    redirect("/login");
   }
 
   return (
