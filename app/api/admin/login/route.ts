@@ -15,14 +15,14 @@ export async function POST(req: NextRequest) {
     const token = jwt.sign(
       { adminId: "admin", role: "admin" },
       process.env.ADMIN_SECRET!,
-      { expiresIn: "12h" }
+      { expiresIn: "12h", algorithm: "HS256" }
     );
 
     const res = NextResponse.json({ success: true });
     res.cookies.set("admin_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: true,       // Always true on Vercel/Netlify
+      sameSite: "lax",    // lax not strict
       path: "/",
       maxAge: 60 * 60 * 12,
     });

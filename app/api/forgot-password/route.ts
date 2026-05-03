@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import clientPromise from "@/lib/mongodb";
 import { transporter } from "@/lib/mailer";
+import ResetPasswordPage from "@/app/reset-password/ResetPassword";
 
 export async function POST(req: Request) {
   const { email } = await req.json();
