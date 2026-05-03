@@ -12,7 +12,7 @@ async function verifyToken(token: string, secret: string): Promise<boolean> {
   }
 }
 
-export async function proxy(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
   const adminToken = req.cookies.get("admin_token")?.value;
   const { pathname } = req.nextUrl;
