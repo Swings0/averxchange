@@ -1,27 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  transactionNames,
+  transactionGateways,
+  transactionAmounts,
+} from "@/lib/live-transactions-data";
 
-const gateways = ["Binance", "Coinbase", "Bybit", "Kraken", "OKX"];
-
-const names = [
-  "James Carter", "Olivia Smith", "Noah Johnson", "Emma Brown",
-  "Liam Davis", "Sophia Wilson", "Mason Taylor", "Isabella Moore",
-  "Ethan Anderson", "Mia Thomas", "Lucas Jackson", "Amelia White",
-  "Aiden Harris", "Harper Martin", "Elijah Thompson", "Evelyn Garcia",
-];
+const randomItem = <T,>(arr: T[]) =>
+  arr[Math.floor(Math.random() * arr.length)];
 
 const randomAmount = () => {
-  const rand = Math.random();
-  let amount;
-
-  if (rand < 0.8) {
-    amount = Math.floor(Math.random() * 4500) + 500;
-  } else if (rand < 0.95) {
-    amount = Math.floor(Math.random() * 15000) + 5000;
-  } else {
-    amount = Math.floor(Math.random() * 60000) + 20000;
-  }
+  const amount =
+    transactionAmounts[
+      Math.floor(Math.random() * transactionAmounts.length)
+    ];
 
   return `$ ${amount.toLocaleString("en-US", {
     minimumFractionDigits: 2,
@@ -40,21 +33,23 @@ const randomDate = () =>
   });
 
 const generateItem = () => ({
-  id: crypto.randomUUID(), // better than Math.random()
-  name: names[Math.floor(Math.random() * names.length)],
+  id: crypto.randomUUID(),
+  name: randomItem(transactionNames),
   amount: randomAmount(),
-  gateway: gateways[Math.floor(Math.random() * gateways.length)],
+  gateway: randomItem(transactionGateways),
   date: randomDate(),
 });
 
-const getRandomInterval = () =>
-  (Math.floor(Math.random() * 10) + 15) * 1000;
+const getRandomInterval = () => {
+  const base = 12;
+  const variance = Math.floor(Math.random() * 5) - 2; // -2 to +2
+  return (base + variance) * 1000; // ~10–14 seconds
+};
 
 const Sec6 = () => {
   const [data, setData] = useState<any[]>([]);
 
   useEffect(() => {
-    // ✅ Generate initial data ONLY on client
     setData(Array.from({ length: 6 }).map(generateItem));
 
     let timeout: ReturnType<typeof setTimeout>;
@@ -78,28 +73,27 @@ const Sec6 = () => {
   return (
     <section className="relative py-24 bg-[#020617] text-white overflow-hidden">
 
-      {/* Top Fade */}
       <div className="pointer-events-none absolute top-0 left-0 w-full h-64 bg-linear-to-b from-transparent via-[#020617]/60 to-[#020617] z-10" />
 
-      {/* Background glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,255,200,0.05),transparent_60%)]" />
 
       <div className="relative max-w-6xl mx-auto px-6 z-40">
 
-        {/* Header */}
         <div className="text-center mb-14">
           <h2 className="text-4xl md:text-5xl font-bold">
-            Live <span className="bg-clip-text text-transparent bg-linear-to-r from-cyan-300 to-cyan-700">Transactions</span>
+            Live{" "}
+            <span className="bg-clip-text text-transparent bg-linear-to-r from-cyan-300 to-cyan-700">
+              Transactions
+            </span>
           </h2>
+
           <p className="text-gray-400 mt-3 text-sm">
-            Real-time deposits and withdrawals happening on the platform
+            Real-time deposits happening on the platform
           </p>
         </div>
 
-        {/* Table */}
         <div className="rounded-2xl overflow-hidden border border-cyan-400/20 bg-white/5 backdrop-blur-xl">
 
-          {/* Head */}
           <div className="grid grid-cols-4 px-6 py-4 bg-linear-to-r from-cyan-400/90 via-emerald-400/80 to-emerald-500/90 text-black text-sm font-semibold">
             <span>Name</span>
             <span>Amount</span>
@@ -107,7 +101,6 @@ const Sec6 = () => {
             <span className="text-right">Time</span>
           </div>
 
-          {/* Rows */}
           {data.map((item) => (
             <div
               key={item.id}

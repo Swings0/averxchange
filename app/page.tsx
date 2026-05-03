@@ -12,6 +12,7 @@ import Sec7 from "@/components/section/Sec7";
 import Sec8 from "@/components/section/Sec8";
 import Sec9 from "@/components/section/Sec9";
 import Sec10 from "@/components/section/Sec10";
+import EarningsToast from "@/components/marketing/EarningsToast";
 
 // import Ticker from "@/components/widget/ticker";
 
@@ -20,6 +21,7 @@ const page = () => {
   return (
     <main>
       <Navbar />
+     <EarningsToast />
       <Hero />
       <CustomTicker />
       <Sec1 />

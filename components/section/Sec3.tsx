@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 const plans = [
   { name: "Bronze Plan", from: "$500", to: "$1,200" },
@@ -74,9 +75,11 @@ const Sec3 = () => {
 
                 {/* Button (center-bottom feel) */}
                 <div className="mt-auto flex justify-center">
-                  <button className="bg-linear-to-r from-cyan-300 to-cyan-900 text-white font-semibold font-manrope py-3 px-6 rounded-lg hover:scale-95 transform transition-transform duration-300">
+                 <Link href="/register">
+                  <button className="cursor-pointer bg-linear-to-r from-cyan-300 to-cyan-900 text-white font-semibold font-manrope py-3 px-6 rounded-lg hover:scale-95 transform transition-transform duration-300">
                     Invest Now
                   </button>
+                 </Link>
                 </div>
 
               </div>
