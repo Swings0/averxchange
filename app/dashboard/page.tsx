@@ -1,55 +1,87 @@
-import { redirect } from "next/navigation";
-import { getTokenPayload } from "@/lib/auth";
-import clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+"use client";
+
+import { useState, useEffect } from "react";
 import AccountSummary from "@/components/dashboard/AccountSummary";
 import ActivePlans from "@/components/dashboard/ActivePlans";
 import RecentTransactions from "@/components/dashboard/RecentTransactions";
 import ReferralCard from "@/components/dashboard/ReferralCard";
 import WelcomeBanner from "@/components/dashboard/WelcomeBanner";
 
-export default async function DashboardPage() {
-  const payload = await getTokenPayload();
-  if (!payload) redirect("/login");
+interface UserData {
+  displayName: string;
+  balance: number;
+  totalProfit: number;
+  bonus: number;
+  tradingAccounts: number;
+  referralBonus: number;
+  totalDeposit: number;
+  totalWithdrawal: number;
+}
 
-  const client = await clientPromise;
-  const db = client.db();
+interface Transaction {
+  id: string;
+  date: string;
+  type: string;
+  amount: number;
+  status: string;
+}
 
-  const user = await db.collection("users").findOne(
-    { _id: new ObjectId(payload.userId) },
-    { projection: { password: 0 } }
-  );
+export default function DashboardPage() {
+  const [user, setUser] = useState<UserData | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [hasActivePlan, setHasActivePlan] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  if (!user) redirect("/login");
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [meRes, txRes, plansRes] = await Promise.all([
+          fetch("/api/me"),
+          fetch("/api/transactions"),
+          fetch("/api/my-plans"),
+        ]);
 
-  // Show approved deposits + all withdrawals (pending + approved) in recent transactions
-  const transactions = await db
-    .collection("transactions")
-    .find({
-      userId: payload.userId,
-      $or: [
-        { type: "deposit", status: "approved" },
-        { type: "withdrawal" },
-        { type: "transfer_out", status: "approved" },
-        { type: "transfer_in", status: "approved" },
-      ],
-    })
-    .sort({ createdAt: -1 })
-    .limit(5)
-    .toArray();
+        const me = await meRes.json();
+        const tx = await txRes.json();
+        const plans = await plansRes.json();
 
-  const displayName = user.username || user.fullName || "User";
+        setUser({
+          displayName: me.displayName || "User",
+          balance: me.balance ?? 0,
+          totalProfit: me.totalProfit ?? 0,
+          bonus: me.bonus ?? 0,
+          tradingAccounts: me.tradingAccounts ?? 0,
+          referralBonus: me.referralBonus ?? 0,
+          totalDeposit: me.totalDeposit ?? 0,
+          totalWithdrawal: me.totalWithdrawal ?? 0,
+        });
 
-  // Check if user has any active plans (for banner)
-  const hasActivePlan = await db.collection("plans").countDocuments({
-    userId: payload.userId, status: "active",
-  }) > 0;
+        const recent = (tx.transactions ?? []).slice(0, 5);
+        setTransactions(recent);
+        setHasActivePlan((plans.plans ?? []).length > 0);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-white tracking-tight">
-          Welcome, {displayName}!
+          Welcome, {user?.displayName}!
         </h1>
         <p className="text-white/40 text-sm mt-1">Here&apos;s your account overview</p>
       </div>
@@ -57,29 +89,20 @@ export default async function DashboardPage() {
       <WelcomeBanner hasActivePlan={hasActivePlan} />
 
       <AccountSummary
-        balance={user.balance ?? 0}
-        totalProfit={user.totalProfit ?? 0}
-        bonus={user.bonus ?? 0}
-        tradingAccounts={user.tradingAccounts ?? 0}
-        referralBonus={user.referralBonus ?? 0}
-        totalDeposit={user.totalDeposit ?? 0}
-        totalWithdrawal={user.totalWithdrawal ?? 0}
+        balance={user?.balance ?? 0}
+        totalProfit={user?.totalProfit ?? 0}
+        bonus={user?.bonus ?? 0}
+        tradingAccounts={user?.tradingAccounts ?? 0}
+        referralBonus={user?.referralBonus ?? 0}
+        totalDeposit={user?.totalDeposit ?? 0}
+        totalWithdrawal={user?.totalWithdrawal ?? 0}
       />
 
-      {/* ActivePlans fetches its own data client-side */}
       <ActivePlans />
 
       <ReferralCard />
 
-      <RecentTransactions
-        transactions={transactions.map((t) => ({
-          id: t._id.toString(),
-          date: t.createdAt?.toISOString() ?? "",
-          type: t.type,
-          amount: t.amount ?? 0,
-          status: t.status ?? "pending",
-        }))}
-      />
+      <RecentTransactions transactions={transactions} />
     </div>
   );
 }

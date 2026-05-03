@@ -1,7 +1,5 @@
 import { redirect } from "next/navigation";
 import { getTokenPayload } from "@/lib/auth";
-import clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 export const metadata = {
@@ -13,53 +11,22 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Only check token — no DB calls here
+  // DB calls in layout cause cold-start timeouts on Vercel/Netlify
+  // which trigger the catch block and redirect to login
   const payload = await getTokenPayload();
-
-  // Only redirect if token is truly missing/invalid
   if (!payload || !payload.userId) {
     redirect("/login");
   }
 
-  let displayName = "User";
-  let balance = 0;
-
-  // Do NOT redirect on DB errors — show dashboard with defaults
-  // This prevents cold-start DB timeouts from kicking users out
-  try {
-    const client = await clientPromise;
-    const db = client.db();
-
-    let user = null;
-
-    try {
-      user = await db.collection("users").findOne(
-        { _id: new ObjectId(payload.userId) },
-        { projection: { password: 0 } }
-      );
-    } catch {
-      // ObjectId conversion failed or DB query failed — use defaults, don't redirect
-    }
-
-    if (user) {
-      displayName = user.username || user.fullName || "User";
-      balance = user.balance ?? 0;
-    }
-    // If user is null, we still render the shell with defaults
-    // Only a bad token should kick someone out, not a DB hiccup
-  } catch {
-    // MongoDB connection failed — still render dashboard, don't redirect
-    // The individual pages will handle their own data fetching errors
-  }
-
+  // Pass empty defaults — DashboardShell and Sidebar
+  // fetch their own live data via /api/me client-side
   return (
-    <DashboardShell displayName={displayName} balance={balance}>
+    <DashboardShell displayName="" balance={0}>
       {children}
     </DashboardShell>
   );
 }
-
-
-
 
 
 

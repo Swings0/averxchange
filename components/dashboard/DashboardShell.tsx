@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import TopBar from "@/components/dashboard/TopBar";
 
@@ -12,13 +12,28 @@ interface DashboardShellProps {
 
 export default function DashboardShell({
   children,
-  displayName,
-  balance,
 }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [displayName, setDisplayName] = useState("User");
+  const [balance, setBalance] = useState(0);
+
+  useEffect(() => {
+    // Open sidebar by default on desktop
+    setSidebarOpen(window.innerWidth >= 1024);
+
+    // Fetch user info client-side — no server DB calls in layout
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.displayName) setDisplayName(d.displayName);
+        if (typeof d.balance === "number") setBalance(d.balance);
+      })
+      .catch(console.error);
+  }, []);
+
+  const toggleSidebar = () => setSidebarOpen((v) => !v);
 
   return (
-    // Intentionally does NOT use ConstellationBackground — dashboard has its own bg
     <div className="min-h-screen bg-[#080f1a] flex overflow-hidden">
       <Sidebar
         displayName={displayName}
@@ -26,12 +41,8 @@ export default function DashboardShell({
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
-
       <div className="flex-1 flex flex-col min-w-0 lg:ml-64">
-        <TopBar
-          displayName={displayName}
-          onMenuToggle={() => setSidebarOpen((v) => !v)}
-        />
+        <TopBar displayName={displayName} onMenuToggle={toggleSidebar} />
         <main className="flex-1 p-4 lg:p-8 overflow-y-auto">
           {children}
         </main>
