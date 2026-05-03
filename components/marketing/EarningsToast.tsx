@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bitcoin } from "lucide-react";
 import {
@@ -22,25 +22,23 @@ function generateToast() {
 }
 
 export default function EarningsToast() {
-  const initialToast = useMemo(
-    () => ({
-      name: "James",
-      country: "canada",
-      amount: 7817,
-    }),
-    []
-  );
+  const [toast, setToast] = useState<null | {
+    name: string;
+    country: string;
+    amount: number;
+  }>(null);
 
-  const [toast, setToast] = useState(initialToast);
-  const [visible, setVisible] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
 
+  // ✅ prevent hydration mismatch
   useEffect(() => {
-    setMounted(true);
+    const first = generateToast();
+    setToast(first);
+    setVisible(true);
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!toast) return;
 
     const cycle = () => {
       setVisible(false);
@@ -54,7 +52,10 @@ export default function EarningsToast() {
     const interval = setInterval(cycle, 7000);
 
     return () => clearInterval(interval);
-  }, [mounted]);
+  }, [toast]);
+
+  // ✅ prevent server render mismatch completely
+  if (!toast) return null;
 
   return (
     <div className="fixed right-3 top-24 z-50 w-fit max-w-[calc(100vw-1.5rem)]">
@@ -81,7 +82,9 @@ export default function EarningsToast() {
 
                 <p className="text-xs font-medium text-white/90">
                   {toast.name} from{" "}
-                  <span className="uppercase text-cyan-300">{toast.country}</span>
+                  <span className="uppercase text-cyan-300">
+                    {toast.country}
+                  </span>
                 </p>
 
                 <p className="text-sm font-semibold text-white">
