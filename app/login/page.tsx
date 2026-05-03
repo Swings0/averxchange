@@ -48,7 +48,7 @@ export default function LoginPage() {
       if (!res.ok) {
         showMsg(result.error || "Invalid credentials", "error");
       } else {
-        showMsg("Welcome back!", "success");
+        showMsg("Welcome!", "success");
         setTimeout(() => router.push("/dashboard"), 800);
       }
     } catch {

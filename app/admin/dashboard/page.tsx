@@ -635,6 +635,11 @@ export default function AdminDashboard() {
   const [loadingDeposits, setLoadingDeposits] = useState(true);
   const [processingDeposit, setProcessingDeposit] = useState<string | null>(null);
 
+  // Pending withdrawals
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
+  const [loadingWithdrawals, setLoadingWithdrawals] = useState(true);
+  const [processingWithdrawal, setProcessingWithdrawal] = useState<string | null>(null);
+
   // Plans
   const [planCount, setPlanCount] = useState(1);
   const [planSlots, setPlanSlots] = useState<any[]>([{}]);
@@ -663,9 +668,43 @@ export default function AdminDashboard() {
       finally { setLoadingDeposits(false); }
     };
     fetchDeposits();
-    const id = setInterval(fetchDeposits, 30000); // poll every 30s
+    const id = setInterval(fetchDeposits, 30000);
     return () => clearInterval(id);
   }, []);
+
+  // Fetch pending withdrawals on mount
+  useEffect(() => {
+    const fetchWithdrawals = async () => {
+      try {
+        const res = await fetch("/api/admin/withdrawals");
+        const data = await res.json();
+        setWithdrawals(data.withdrawals ?? []);
+      } catch {}
+      finally { setLoadingWithdrawals(false); }
+    };
+    fetchWithdrawals();
+    const id = setInterval(fetchWithdrawals, 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleWithdrawalAction = async (transactionId: string, action: string) => {
+    setProcessingWithdrawal(`${transactionId}-${action}`);
+    try {
+      const res = await fetch("/api/admin/withdrawals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transactionId, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error, "error"); return; }
+      showToast(data.message, "success");
+      // Remove from list unless leavePending
+      if (action !== "leavePending") {
+        setWithdrawals((prev) => prev.filter((w) => w.id !== transactionId));
+      }
+    } catch { showToast("Network error", "error"); }
+    finally { setProcessingWithdrawal(null); }
+  };
 
   const handleDepositAction = async (transactionId: string, action: "approve" | "decline") => {
     setProcessingDeposit(`${transactionId}-${action}`);
@@ -877,6 +916,106 @@ export default function AdminDashboard() {
                         ? <Loader2 size={12} className="animate-spin" />
                         : <XCircle size={13} />}
                       Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Pending Withdrawals ── */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-white/[0.06]" />
+            <h2 className="text-sm font-bold text-white/60 uppercase tracking-widest whitespace-nowrap flex items-center gap-2">
+              Pending Withdrawals
+              {withdrawals.length > 0 && (
+                <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs px-2 py-0.5 rounded-full">
+                  {withdrawals.length} pending
+                </span>
+              )}
+            </h2>
+            <div className="h-px flex-1 bg-white/[0.06]" />
+          </div>
+
+          {loadingWithdrawals ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={20} className="animate-spin text-white/30" />
+            </div>
+          ) : withdrawals.length === 0 ? (
+            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-5 py-8 text-center">
+              <CheckCircle2 size={24} className="text-emerald-400/40 mx-auto mb-2" />
+              <p className="text-sm text-white/30">No pending withdrawals</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {withdrawals.map((w) => (
+                <div key={w.id} className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-5 space-y-4">
+                  {/* Details */}
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-white">{w.userName}</p>
+                        <span className="text-xs text-white/30 font-mono">{w.userEmail}</span>
+                      </div>
+                      <p className="text-xs text-white/50">
+                        <span className="text-rose-400 font-bold text-sm">${w.amount?.toLocaleString()}</span>
+                        {" "}via {w.method}
+                      </p>
+                      <p className="text-xs text-white/30 font-mono">{w.walletAddress}</p>
+                      <p className="text-xs text-white/25">{new Date(w.createdAt).toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Approve */}
+                    <button
+                      onClick={() => handleWithdrawalAction(w.id, "approve")}
+                      disabled={!!processingWithdrawal}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-semibold hover:bg-emerald-500/30 disabled:opacity-40 transition-all"
+                    >
+                      {processingWithdrawal === `${w.id}-approve`
+                        ? <Loader2 size={12} className="animate-spin" />
+                        : <CheckCircle2 size={13} />}
+                      Approve
+                    </button>
+
+                    {/* Leave pending */}
+                    <button
+                      onClick={() => handleWithdrawalAction(w.id, "leavePending")}
+                      disabled={!!processingWithdrawal}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-xl text-xs font-semibold hover:bg-amber-500/30 disabled:opacity-40 transition-all"
+                    >
+                      {processingWithdrawal === `${w.id}-leavePending`
+                        ? <Loader2 size={12} className="animate-spin" />
+                        : <Clock size={13} />}
+                      Leave Pending
+                    </button>
+
+                    {/* Decline with email */}
+                    <button
+                      onClick={() => handleWithdrawalAction(w.id, "declineWithEmail")}
+                      disabled={!!processingWithdrawal}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-rose-500/20 border border-rose-500/30 text-rose-400 rounded-xl text-xs font-semibold hover:bg-rose-500/30 disabled:opacity-40 transition-all"
+                    >
+                      {processingWithdrawal === `${w.id}-declineWithEmail`
+                        ? <Loader2 size={12} className="animate-spin" />
+                        : <XCircle size={13} />}
+                      Decline + Email
+                    </button>
+
+                    {/* Decline without email */}
+                    <button
+                      onClick={() => handleWithdrawalAction(w.id, "declineWithoutEmail")}
+                      disabled={!!processingWithdrawal}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-white/10 border border-white/20 text-white/50 rounded-xl text-xs font-semibold hover:bg-white/15 hover:text-white/80 disabled:opacity-40 transition-all"
+                    >
+                      {processingWithdrawal === `${w.id}-declineWithoutEmail`
+                        ? <Loader2 size={12} className="animate-spin" />
+                        : <XCircle size={13} />}
+                      Decline Silent
                     </button>
                   </div>
                 </div>

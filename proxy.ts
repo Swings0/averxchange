@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 
-export function proxy(req: NextRequest) {
+// jose is edge-compatible unlike jsonwebtoken which uses Node.js crypto
+
+async function verifyToken(token: string, secret: string): Promise<boolean> {
+  try {
+    const key = new TextEncoder().encode(secret);
+    await jwtVerify(token, key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function proxy(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
   const adminToken = req.cookies.get("admin_token")?.value;
   const { pathname } = req.nextUrl;
@@ -12,13 +24,9 @@ export function proxy(req: NextRequest) {
   const isAdminLogin = pathname === "/admin/login";
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/register");
 
-  const verifyToken = (t: string, secret: string): boolean => {
-    try { jwt.verify(t, secret); return true; } catch { return false; }
-  };
-
-  // Admin dashboard protection
+  // ── Admin dashboard protection ──────────────────────────────────
   if (isAdminProtected) {
-    if (!adminToken || !verifyToken(adminToken, process.env.ADMIN_SECRET!)) {
+    if (!adminToken || !(await verifyToken(adminToken, process.env.ADMIN_SECRET!))) {
       const res = NextResponse.redirect(new URL("/admin/login", req.url));
       res.cookies.set("admin_token", "", { maxAge: 0, path: "/" });
       return res;
@@ -26,14 +34,14 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Redirect logged-in admin away from admin login
-  if (isAdminLogin && adminToken && verifyToken(adminToken, process.env.ADMIN_SECRET!)) {
+  // Redirect logged-in admin away from admin login page
+  if (isAdminLogin && adminToken && (await verifyToken(adminToken, process.env.ADMIN_SECRET!))) {
     return NextResponse.redirect(new URL("/admin/dashboard", req.url));
   }
 
-  // User dashboard protection
+  // ── User dashboard protection ───────────────────────────────────
   if (isProtected) {
-    if (!token || !verifyToken(token, process.env.JWT_SECRET!)) {
+    if (!token || !(await verifyToken(token, process.env.JWT_SECRET!))) {
       const res = NextResponse.redirect(new URL("/login", req.url));
       res.cookies.set("token", "", { maxAge: 0, path: "/" });
       return res;
@@ -41,8 +49,8 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Valid user token trying to access login/register
-  if (isAuthPage && token && verifyToken(token, process.env.JWT_SECRET!)) {
+  // Redirect already logged-in users away from login/register
+  if (isAuthPage && token && (await verifyToken(token, process.env.JWT_SECRET!))) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
@@ -50,5 +58,11 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register", "/admin/dashboard/:path*", "/admin/login"],
+  matcher: [
+    "/dashboard/:path*",
+    "/login",
+    "/register",
+    "/admin/dashboard/:path*",
+    "/admin/login",
+  ],
 };

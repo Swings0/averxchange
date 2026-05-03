@@ -11,24 +11,23 @@ export async function GET() {
     const client = await clientPromise;
     const db = client.db();
 
-    // Deposits: only approved ones show to user
-    const deposits = await db
+    // All transactions visible to user:
+    // - Deposits: approved only
+    // - Withdrawals: all statuses (pending, approved, declined, reversed)
+    // - Transfers: approved only
+    const all = await db
       .collection("transactions")
-      .find({ userId: payload.userId, type: "deposit", status: "approved" })
+      .find({
+        userId: payload.userId,
+        $or: [
+          { type: "deposit", status: "approved" },
+          { type: "withdrawal" },
+          { type: "transfer_out", status: "approved" },
+          { type: "transfer_in", status: "approved" },
+        ],
+      })
       .sort({ createdAt: -1 })
       .toArray();
-
-    // Withdrawals: show all (pending + approved)
-    const withdrawals = await db
-      .collection("transactions")
-      .find({ userId: payload.userId, type: "withdrawal" })
-      .sort({ createdAt: -1 })
-      .toArray();
-
-    // Merge and sort by date
-    const all = [...deposits, ...withdrawals].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
 
     return NextResponse.json({
       transactions: all.map((t) => ({
@@ -37,6 +36,9 @@ export async function GET() {
         amount: t.amount,
         method: t.paymentMethod || t.method || "",
         status: t.status,
+        walletAddress: t.walletAddress || "",
+        recipientEmail: t.recipientEmail || "",
+        senderEmail: t.senderEmail || "",
         date: t.createdAt?.toISOString() ?? "",
       })),
     });

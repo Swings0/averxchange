@@ -22,9 +22,18 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/login");
 
+  // Show approved deposits + all withdrawals (pending + approved) in recent transactions
   const transactions = await db
     .collection("transactions")
-    .find({ userId: payload.userId, status: "approved" })
+    .find({
+      userId: payload.userId,
+      $or: [
+        { type: "deposit", status: "approved" },
+        { type: "withdrawal" },
+        { type: "transfer_out", status: "approved" },
+        { type: "transfer_in", status: "approved" },
+      ],
+    })
     .sort({ createdAt: -1 })
     .limit(5)
     .toArray();
