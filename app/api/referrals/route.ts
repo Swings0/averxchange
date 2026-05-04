@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { getTokenPayload } from "@/lib/auth";
 import { ObjectId } from "mongodb";
-
+ 
 export async function GET() {
   try {
     const payload = await getTokenPayload();

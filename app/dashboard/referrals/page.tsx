@@ -16,7 +16,7 @@ interface ReferralData {
 export default function ReferralsPage() {
   const [data, setData] = useState<ReferralData | null>(null);
   const [copied, setCopied] = useState(false);
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   useEffect(() => {
     fetch("/api/referrals").then((r) => r.json()).then(setData).catch(console.error);

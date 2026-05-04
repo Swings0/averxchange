@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
 export interface DecodedToken {
@@ -11,16 +11,28 @@ export async function getTokenPayload(): Promise<DecodedToken | null> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
+
     if (!token) return null;
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const secret = process.env.JWT_SECRET;
+    if (!secret) return null;
 
-    // Handle both string userId and ObjectId object (backwards compatibility)
-    const userId = typeof decoded.userId === "object"
-      ? decoded.userId.toString()
-      : decoded.userId;
+    const key = new TextEncoder().encode(secret);
 
-    return { userId, iat: decoded.iat, exp: decoded.exp };
+    const { payload } = await jwtVerify(token, key);
+
+    const userId =
+      typeof payload.userId === "object"
+        ? payload.userId?.toString()
+        : String(payload.userId);
+
+    if (!userId) return null;
+
+    return {
+      userId,
+      iat: Number(payload.iat),
+      exp: Number(payload.exp),
+    };
   } catch {
     return null;
   }
