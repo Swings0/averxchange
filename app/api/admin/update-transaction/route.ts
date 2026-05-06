@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getAdminPayload } from "@/lib/adminAuth";
+import { getAdminApiPayload } from "@/lib/apiAuth";
 import { ObjectId } from "mongodb";
 import { transporter } from "@/lib/mailer";
 
-// PATCH — approve or decline a withdrawal
 export async function PATCH(req: NextRequest) {
   try {
-    const admin = await getAdminPayload();
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const isAdmin = await getAdminApiPayload(req);
+    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { transactionId, action } = await req.json();
     if (!transactionId || !["approve", "decline"].includes(action)) {
@@ -29,7 +28,6 @@ export async function PATCH(req: NextRequest) {
       { $set: { status: action === "approve" ? "approved" : "declined", updatedAt: new Date() } }
     );
 
-    // If withdrawal declined — refund balance
     if (action === "decline" && tx.type === "withdrawal") {
       await db.collection("users").updateOne(
         { _id: new ObjectId(tx.userId) },
@@ -45,19 +43,17 @@ export async function PATCH(req: NextRequest) {
           subject: action === "approve"
             ? `✅ Withdrawal Approved — $${tx.amount?.toLocaleString()}`
             : `❌ Withdrawal Declined — $${tx.amount?.toLocaleString()}`,
-          html: `
-            <div style="font-family:sans-serif;max-width:600px;">
-              <h2>${action === "approve" ? "Withdrawal Approved!" : "Withdrawal Declined"}</h2>
-              <p>Hi <b>${userName}</b>,</p>
-              ${action === "approve"
-                ? `<p>Your withdrawal of <b>$${tx.amount?.toLocaleString()}</b> via <b>${tx.method}</b> has been approved and is being processed.</p>`
-                : `<p>Your withdrawal of <b>$${tx.amount?.toLocaleString()}</b> has been declined. The amount has been refunded to your account balance.</p>`
-              }
-              <p>— The Aver Exchange Team</p>
-            </div>
-          `,
+          html: `<div style="font-family:sans-serif;max-width:600px;">
+            <h2>${action === "approve" ? "Withdrawal Approved!" : "Withdrawal Declined"}</h2>
+            <p>Hi <b>${userName}</b>,</p>
+            ${action === "approve"
+              ? `<p>Your withdrawal of <b>$${tx.amount?.toLocaleString()}</b> has been approved and is being processed.</p>`
+              : `<p>Your withdrawal of <b>$${tx.amount?.toLocaleString()}</b> has been declined. The amount has been refunded to your account balance.</p>`
+            }
+            <p>— The Aver Exchange Team</p>
+          </div>`,
         });
-      } catch (e) { console.error("Transaction email error:", e); }
+      } catch (e) { console.error(e); }
     }
 
     return NextResponse.json({ success: true, message: `Transaction ${action}d` });
@@ -67,11 +63,10 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-// DELETE — remove a transaction entirely
 export async function DELETE(req: NextRequest) {
   try {
-    const admin = await getAdminPayload();
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const isAdmin = await getAdminApiPayload(req);
+    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { transactionId } = await req.json();
     if (!transactionId) return NextResponse.json({ error: "Transaction ID required" }, { status: 400 });

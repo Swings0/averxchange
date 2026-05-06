@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getAdminPayload } from "@/lib/adminAuth";
+import { getAdminApiPayload } from "@/lib/apiAuth";
 import { ObjectId } from "mongodb";
 
 export async function DELETE(req: NextRequest) {
   try {
-    const admin = await getAdminPayload();
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const isAdmin = await getAdminApiPayload(req);
+    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { planId } = await req.json();
     if (!planId) return NextResponse.json({ error: "Plan ID required" }, { status: 400 });

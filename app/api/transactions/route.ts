@@ -1,22 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getTokenPayload } from "@/lib/auth";
+import { getApiTokenPayload } from "@/lib/apiAuth";
 import { ObjectId } from "mongodb";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const payload = await getTokenPayload();
+    const payload = await getApiTokenPayload(req);
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const client = await clientPromise;
     const db = client.db();
 
-    // All transactions visible to user:
-    // - Deposits: approved only
-    // - Withdrawals: all statuses (pending, approved, declined, reversed)
-    // - Transfers: approved only
-    const all = await db
-      .collection("transactions")
+    const all = await db.collection("transactions")
       .find({
         userId: payload.userId,
         $or: [
@@ -37,8 +32,6 @@ export async function GET() {
         method: t.paymentMethod || t.method || "",
         status: t.status,
         walletAddress: t.walletAddress || "",
-        recipientEmail: t.recipientEmail || "",
-        senderEmail: t.senderEmail || "",
         date: t.createdAt?.toISOString() ?? "",
       })),
     });

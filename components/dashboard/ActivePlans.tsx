@@ -71,7 +71,7 @@ export default function ActivePlans() {
             You do not have an active investment plan at the moment.
           </p>
           <Link
-            href="/dashboard/trading-plans"
+            href="/dashboard/purchase-plan"
             className="inline-block bg-white text-[#080f1a] text-sm font-bold px-6 py-2.5 rounded-xl hover:bg-white/90 transition-colors"
           >
             Buy a plan

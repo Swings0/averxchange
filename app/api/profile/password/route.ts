@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getTokenPayload } from "@/lib/auth";
+import { getApiTokenPayload } from "@/lib/apiAuth";
 import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
 
 export async function PATCH(req: NextRequest) {
   try {
-    const payload = await getTokenPayload();
+    const payload = await getApiTokenPayload(req);
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { oldPassword, newPassword, confirmPassword } = await req.json();
@@ -14,11 +14,9 @@ export async function PATCH(req: NextRequest) {
     if (!oldPassword || !newPassword || !confirmPassword) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
     }
-
     if (newPassword.length < 5) {
       return NextResponse.json({ error: "Password must be at least 5 characters" }, { status: 400 });
     }
-
     if (newPassword !== confirmPassword) {
       return NextResponse.json({ error: "Passwords do not match" }, { status: 400 });
     }
@@ -33,7 +31,6 @@ export async function PATCH(req: NextRequest) {
     if (!valid) return NextResponse.json({ error: "Old password is incorrect" }, { status: 400 });
 
     const hashed = await bcrypt.hash(newPassword, 10);
-
     await db.collection("users").updateOne(
       { _id: new ObjectId(payload.userId) },
       { $set: { password: hashed, updatedAt: new Date() } }

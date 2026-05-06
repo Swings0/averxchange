@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getTokenPayload } from "@/lib/auth";
+import { getApiTokenPayload } from "@/lib/apiAuth";
 import { ObjectId } from "mongodb";
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = await getTokenPayload();
+    const payload = await getApiTokenPayload(req);
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { recipientEmail, amount } = await req.json();
@@ -22,24 +22,18 @@ export async function POST(req: NextRequest) {
     const client = await clientPromise;
     const db = client.db();
 
-    // Get sender
-    const sender = await db.collection("users").findOne({
-      _id: new ObjectId(payload.userId),
-    });
+    const sender = await db.collection("users").findOne({ _id: new ObjectId(payload.userId) });
     if (!sender) return NextResponse.json({ error: "Sender not found" }, { status: 404 });
 
-    // Prevent self-transfer
     if (sender.email === recipientEmail) {
       return NextResponse.json({ error: "You cannot transfer funds to yourself" }, { status: 400 });
     }
 
-    // Find recipient by email only
     const recipient = await db.collection("users").findOne({ email: recipientEmail });
     if (!recipient) {
       return NextResponse.json({ error: "User does not exist. Please check the email and try again." }, { status: 404 });
     }
 
-    // Check sender balance
     const senderBalance = sender.balance ?? 0;
     if (amt > senderBalance) {
       return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
@@ -48,19 +42,15 @@ export async function POST(req: NextRequest) {
     const newSenderBalance = parseFloat((senderBalance - amt).toFixed(2));
     const newRecipientBalance = parseFloat(((recipient.balance ?? 0) + amt).toFixed(2));
 
-    // Deduct from sender
     await db.collection("users").updateOne(
       { _id: new ObjectId(payload.userId) },
       { $set: { balance: newSenderBalance } }
     );
-
-    // Credit recipient
     await db.collection("users").updateOne(
       { _id: recipient._id },
       { $set: { balance: newRecipientBalance } }
     );
 
-    // Log transfer as transactions for both
     const now = new Date();
     await db.collection("transactions").insertMany([
       {
