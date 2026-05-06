@@ -1,12 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getApiTokenPayload } from "@/lib/apiAuth";
+import { getTokenPayload } from "@/lib/auth";
 import { ObjectId } from "mongodb";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const payload = await getApiTokenPayload(req);
-    if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const payload = await getTokenPayload();
+    if (!payload) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const client = await clientPromise;
     const db = client.db();
@@ -16,7 +18,9 @@ export async function GET(req: NextRequest) {
       { projection: { password: 0 } }
     );
 
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     return NextResponse.json({
       id: user._id.toString(),

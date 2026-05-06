@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getApiTokenPayload } from "@/lib/apiAuth";
+import { getTokenPayload } from "@/lib/auth";
 import { ObjectId } from "mongodb";
-
-export async function GET(req: NextRequest) {
+ 
+export async function GET() {
   try {
-    const payload = await getApiTokenPayload(req);
+    const payload = await getTokenPayload();
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const client = await clientPromise;
@@ -15,21 +15,25 @@ export async function GET(req: NextRequest) {
       { _id: new ObjectId(payload.userId) },
       { projection: { password: 0 } }
     );
+
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
+    // Find who referred this user
     let referredByUser = null;
     if (user.referredBy) {
-      try {
-        referredByUser = await db.collection("users").findOne(
-          { _id: new ObjectId(user.referredBy) },
-          { projection: { username: 1, fullName: 1 } }
-        );
-      } catch {}
+      referredByUser = await db.collection("users").findOne(
+        { _id: new ObjectId(user.referredBy) },
+        { projection: { username: 1, fullName: 1 } }
+      );
     }
 
+    // Find all users this user referred
     const referrals = await db
       .collection("users")
-      .find({ referredBy: payload.userId }, { projection: { username: 1, fullName: 1, email: 1, createdAt: 1, balance: 1 } })
+      .find(
+        { referredBy: payload.userId },
+        { projection: { username: 1, fullName: 1, email: 1, createdAt: 1, balance: 1 } }
+      )
       .sort({ createdAt: -1 })
       .toArray();
 

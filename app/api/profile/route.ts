@@ -1,22 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getApiTokenPayload } from "@/lib/apiAuth";
+import { getTokenPayload } from "@/lib/auth";
 import { ObjectId } from "mongodb";
 
 export async function PATCH(req: NextRequest) {
   try {
-    const payload = await getApiTokenPayload(req);
+    const payload = await getTokenPayload();
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
-    const allowed = [
-      "bankName", "accountName", "accountNumber", "swiftCode",
-      "bitcoinAddress", "ethereumAddress", "usdtTrc20Address", "usdtErc20Address", "solanaAddress",
-    ];
+
+    // Only allow safe fields to be updated
+    const allowed = ["fullName", "username", "phone", "dateOfBirth", "country"];
     const updates: Record<string, string> = {};
     for (const key of allowed) {
-      if (body[key] !== undefined) updates[`withdrawalSettings.${key}`] = body[key];
+      if (body[key] !== undefined && body[key] !== "") {
+        updates[key] = body[key];
+      }
     }
+
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }
@@ -29,6 +31,7 @@ export async function PATCH(req: NextRequest) {
       { $set: { ...updates, updatedAt: new Date() } }
     );
 
+    // Return updated user
     const user = await db.collection("users").findOne(
       { _id: new ObjectId(payload.userId) },
       { projection: { password: 0 } }
