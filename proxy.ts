@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-export const runtime = "edge";
 
 async function verifyToken(token: string, secret: string): Promise<boolean> {
   try {
