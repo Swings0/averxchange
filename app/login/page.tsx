@@ -29,43 +29,47 @@ export default function LoginPage() {
     setLoading(true);
 
     const form = e.currentTarget;
-    const data = Object.fromEntries(new FormData(form).entries());
+    const data = new FormData(form);
+
+    const email = String(data.get("email") || "").trim();
+    const password = String(data.get("password") || "").trim();
 
     const newErrors: Record<string, boolean> = {};
 
-    ["email", "password"].forEach((f) => {
-      if (!data[f] || String(data[f]).trim() === "") {
-        newErrors[f] = true;
-      }
-    });
+    if (!email) newErrors.email = true;
+    if (!password) newErrors.password = true;
 
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
       showMsg("Please fill in all fields", "error");
-      setTimeout(() => setErrors({}), 5000);
       setLoading(false);
       return;
     }
 
     try {
       const res = await signIn("credentials", {
-        email: String(data.email),
-        password: String(data.password),
+        email,
+        password,
         redirect: false,
       });
 
-      if (res?.error) {
+      // 🔥 IMPORTANT FIX: correct NextAuth error handling
+      if (!res || res.error) {
         showMsg("Invalid email or password", "error");
-      } else {
-        showMsg("Welcome!", "success");
-
-        setTimeout(() => {
-          router.push("/dashboard");
-          router.refresh();
-        }, 800);
+        setLoading(false);
+        return;
       }
-    } catch {
+
+      showMsg("Welcome back!", "success");
+
+      // Small delay ensures cookie is written before navigation
+      setTimeout(() => {
+        router.push("/dashboard");
+        router.refresh();
+      }, 600);
+    } catch (err) {
+      console.error(err);
       showMsg("Server error", "error");
     }
 
@@ -81,7 +85,8 @@ export default function LoginPage() {
 
   return (
     <section className="relative min-h-screen bg-[#020617] flex items-center justify-center px-4 text-white overflow-hidden">
-      {/* Background glows */}
+      
+      {/* Background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_20%,rgba(6,182,212,0.08),transparent_50%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(99,102,241,0.06),transparent_50%)]" />
 
@@ -99,7 +104,7 @@ export default function LoginPage() {
       )}
 
       <div className="relative w-full max-w-4xl grid lg:grid-cols-2 bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl">
-        
+
         {/* Left panel */}
         <div className="hidden lg:flex flex-col justify-center items-center bg-gradient-to-br from-cyan-900/30 to-indigo-900/20 p-10 text-center border-r border-white/[0.06]">
           <Image
@@ -107,25 +112,22 @@ export default function LoginPage() {
             alt="Logo"
             width={72}
             height={72}
-            className="bg-white p-1.5 rounded-2xl mx-auto mb-6"
+            className="bg-white p-1.5 rounded-2xl mb-6"
           />
-          <h2 className="text-2xl font-bold text-white mb-2">
-            Welcome Back!
-          </h2>
-          <p className="text-white/50 text-sm leading-relaxed max-w-xs mb-8">
-            Sign in to your account to continue managing your investments.
+
+          <h2 className="text-2xl font-bold">Welcome Back!</h2>
+
+          <p className="text-white/50 text-sm max-w-xs mt-2 mb-8">
+            Sign in to manage your investments and portfolio.
           </p>
 
-          <div className="relative w-56 h-56">
-            <Image
-              src="/SignUp1.png"
-              alt="Login"
-              fill
-              className="rounded-full object-cover opacity-80"
-              sizes="224px"
-              loading="eager"
-            />
-          </div>
+          <Image
+            src="/SignUp1.png"
+            alt="Login"
+            width={220}
+            height={220}
+            className="opacity-80 rounded-full"
+          />
         </div>
 
         {/* Form */}
@@ -143,24 +145,18 @@ export default function LoginPage() {
             />
           </div>
 
-          <div className="mb-2">
-            <h1 className="text-xl font-bold text-white">
-              Sign In
-            </h1>
-            <p className="text-white/40 text-xs mt-0.5">
-              Enter your credentials to access your account
+          <div>
+            <h1 className="text-xl font-bold">Sign In</h1>
+            <p className="text-white/40 text-xs">
+              Enter your credentials to continue
             </p>
           </div>
 
           {/* Email */}
-          <div className="relative group">
+          <div className="relative">
             <Mail
               size={15}
-              className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${
-                errors.email
-                  ? "text-rose-400"
-                  : "text-white/30 group-focus-within:text-cyan-400"
-              }`}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
             />
             <input
               name="email"
@@ -171,66 +167,57 @@ export default function LoginPage() {
           </div>
 
           {/* Password */}
-          <div className="relative group">
+          <div className="relative">
             <Lock
               size={15}
-              className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${
-                errors.password
-                  ? "text-rose-400"
-                  : "text-white/30 group-focus-within:text-cyan-400"
-              }`}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
             />
+
             <input
-              type={showPassword ? "text" : "password"}
               name="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
               className={`${fieldClass("password")} pr-10`}
             />
+
             <button
               type="button"
               onClick={() => setShowPassword((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-cyan-400"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30"
             >
               {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
             </button>
           </div>
 
-          <div className="flex justify-end -mt-2">
-            <Link
-              href="/forgot-password"
-              className="text-xs text-cyan-400"
-            >
+          {/* Forgot */}
+          <div className="flex justify-end">
+            <Link href="/forgot-password" className="text-xs text-cyan-400">
               Forgot Password?
             </Link>
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-500 text-white font-semibold rounded-xl"
+            className="flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-cyan-500 to-indigo-500 text-white font-semibold rounded-xl disabled:opacity-60"
           >
-            {loading ? (
-              "Signing in..."
-            ) : (
+            {loading ? "Signing in..." : (
               <>
-                <span>Sign In</span>
-                <ArrowRight size={16} />
+                Sign In <ArrowRight size={16} />
               </>
             )}
           </button>
 
           <p className="text-center text-xs text-white/40">
             Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="text-cyan-400 font-medium"
-            >
+            <Link href="/register" className="text-cyan-400">
               Create one
             </Link>
           </p>
 
           <p className="text-center text-[11px] text-white/20">
-            © {year} AverXchange. All Rights Reserved.
+            © {year} AverXchange
           </p>
         </form>
       </div>
