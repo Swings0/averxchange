@@ -35,8 +35,8 @@ export async function POST(req: Request) {
 
     res.cookies.set("token", token, {
       httpOnly: true,
-      secure: true,          // Always true — Vercel/Netlify always HTTPS
-      sameSite: "none",       // Changed from "strict" — fixes navigation cookie drops
+      secure: true,      
+      sameSite: "lax",// Changed from "strict" — fixes navigation cookie drops
       path: "/",
       maxAge: FIFTEEN_HOURS,
     });
