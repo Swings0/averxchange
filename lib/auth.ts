@@ -3,30 +3,45 @@ import Credentials from "next-auth/providers/credentials";
 import clientPromise from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 
-export const { auth, handlers, signIn, signOut } = NextAuth({
+export const {
+  handlers,
+  auth,
+  signIn,
+  signOut,
+} = NextAuth({
+  secret: process.env.NEXTAUTH_SECRET,
+
+  session: {
+    strategy: "jwt",
+  },
+
   providers: [
     Credentials({
-      name: "Credentials",
+      name: "credentials",
 
       credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" },
+        email: {},
+        password: {},
       },
 
-      async authorize(credentials, req) {
-        const email = (credentials?.email as string) ?? "";
-        const password = (credentials?.password as string) ?? "";
-
-        if (!email || !password) return null;
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
 
         const client = await clientPromise;
         const db = client.db();
 
-        const user = await db.collection("users").findOne({ email });
+        const user = await db.collection("users").findOne({
+          email: credentials.email,
+        });
 
-        if (!user || !user.password) return null;
+        if (!user) return null;
 
-        const valid = await bcrypt.compare(password, user.password);
+        const valid = await bcrypt.compare(
+          credentials.password as string,
+          user.password
+        );
 
         if (!valid) return null;
 
@@ -34,10 +49,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           id: user._id.toString(),
           email: user.email,
           name: user.username || user.fullName || "User",
-
-          // ✅ FIX: include role (IMPORTANT)
           role: user.role || "user",
-        } as any;
+        };
       },
     }),
   ],
@@ -46,21 +59,23 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as any).role;
+        token.role = user.role;
       }
+
       return token;
     },
 
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        (session.user as any).role = token.role;
+        session.user.role = token.role as string;
       }
+
       return session;
     },
   },
 
-  session: {
-    strategy: "jwt",
+  pages: {
+    signIn: "/login",
   },
 });

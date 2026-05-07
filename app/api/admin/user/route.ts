@@ -1,46 +1,77 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { getAdminPayload } from "@/lib/adminAuth";
+import { ObjectId } from "mongodb";
 
 export async function GET(req: NextRequest) {
   try {
     const admin = await getAdminPayload();
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const email = req.nextUrl.searchParams.get("email");
-    if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
+
+    if (!email) {
+      return NextResponse.json({ error: "Email required" }, { status: 400 });
+    }
 
     const client = await clientPromise;
     const db = client.db();
 
     const user = await db.collection("users").findOne(
-      { email },
-      { projection: { password: 0 } }
+      {
+        email: {
+          $regex: `^${email.trim()}$`,
+          $options: "i",
+        },
+      },
+      {
+        projection: { password: 0 },
+      }
     );
 
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
     const userId = user._id.toString();
 
-    // Active plans
     const plans = await db
       .collection("plans")
-      .find({ userId, status: "active" })
+      .find({
+        $or: [
+          { userId },
+          { userId: user._id },
+        ],
+        status: "active",
+      })
       .sort({ createdAt: -1 })
       .toArray();
 
-    // Recent deposits
     const deposits = await db
       .collection("transactions")
-      .find({ userId, type: "deposit" })
+      .find({
+        $or: [
+          { userId },
+          { userId: user._id },
+        ],
+        type: "deposit",
+      })
       .sort({ createdAt: -1 })
       .limit(10)
       .toArray();
 
-    // Recent withdrawals
     const withdrawals = await db
       .collection("transactions")
-      .find({ userId, type: "withdrawal" })
+      .find({
+        $or: [
+          { userId },
+          { userId: user._id },
+        ],
+        type: "withdrawal",
+      })
       .sort({ createdAt: -1 })
       .limit(10)
       .toArray();
@@ -49,7 +80,7 @@ export async function GET(req: NextRequest) {
       id: userId,
       username: user.username || user.fullName || "User",
       email: user.email,
-      // Stats
+
       balance: user.balance ?? 0,
       totalProfit: user.totalProfit ?? 0,
       bonus: user.bonus ?? 0,
@@ -57,7 +88,7 @@ export async function GET(req: NextRequest) {
       referralBonus: user.referralBonus ?? 0,
       totalDeposit: user.totalDeposit ?? 0,
       totalWithdrawal: user.totalWithdrawal ?? 0,
-      // Plans
+
       plans: plans.map((p) => ({
         id: p._id.toString(),
         name: p.name,
@@ -70,7 +101,7 @@ export async function GET(req: NextRequest) {
         endDate: p.endDate?.toISOString() ?? "",
         status: p.status,
       })),
-      // Transactions
+
       deposits: deposits.map((d) => ({
         id: d._id.toString(),
         amount: d.amount,
@@ -78,6 +109,7 @@ export async function GET(req: NextRequest) {
         status: d.status,
         date: d.createdAt?.toISOString() ?? "",
       })),
+
       withdrawals: withdrawals.map((w) => ({
         id: w._id.toString(),
         amount: w.amount,
@@ -87,8 +119,13 @@ export async function GET(req: NextRequest) {
         date: w.createdAt?.toISOString() ?? "",
       })),
     });
+
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }

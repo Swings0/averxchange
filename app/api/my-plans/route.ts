@@ -17,7 +17,6 @@ export async function GET() {
     const db = client.db();
     const now = new Date();
 
-    // ── 1. Apply scheduled updates ──
     const pendingUpdates = await db
       .collection("scheduledUpdates")
       .find({
@@ -39,10 +38,12 @@ export async function GET() {
       );
     }
 
-    // ── 2. Activate pending plans ──
     await db.collection("plans").updateMany(
       {
-        userId,
+        $or: [
+          { userId },
+          { userId: new ObjectId(userId) },
+        ],
         status: "pending",
         startDate: { $lte: now },
       },
@@ -54,11 +55,13 @@ export async function GET() {
       }
     );
 
-    // ── 3. Handle expired plans ──
     const expiredPlans = await db
       .collection("plans")
       .find({
-        userId,
+        $or: [
+          { userId },
+          { userId: new ObjectId(userId) },
+        ],
         status: "active",
         endDate: { $lte: now },
       })
@@ -88,17 +91,18 @@ export async function GET() {
       );
     }
 
-    // ── 4. Fetch active plans ──
     const activePlans = await db
       .collection("plans")
       .find({
-        userId,
+        $or: [
+          { userId },
+          { userId: new ObjectId(userId) },
+        ],
         status: "active",
       })
       .sort({ createdAt: -1 })
       .toArray();
 
-    // ── 5. Fetch user summary ──
     const user = await db.collection("users").findOne(
       { _id: new ObjectId(userId) },
       { projection: { balance: 1, totalProfit: 1 } }
@@ -122,8 +126,10 @@ export async function GET() {
       balance: user?.balance ?? 0,
       totalProfit: user?.totalProfit ?? 0,
     });
+
   } catch (err) {
     console.error("GET /api/my-plans error:", err);
+
     return NextResponse.json(
       { error: "Server error" },
       { status: 500 }
