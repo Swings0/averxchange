@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { auth } from "@/auth"; // ✅ NextAuth v5
+import { auth } from "@/lib/auth"; // ✅ NextAuth v5
 import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
 import { transporter } from "@/lib/mailer";

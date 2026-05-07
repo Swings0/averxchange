@@ -2,12 +2,21 @@
 
 import { useState } from "react";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+
+type SignInResult = {
+  error?: string;
+  ok?: boolean;
+  status?: number;
+  url?: string | null;
+};
 
 export default function LoginPage() {
+  const router = useRouter(); // ✅ FIXED (THIS WAS MISSING)
+
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
@@ -16,7 +25,6 @@ export default function LoginPage() {
     type: "error" | "success";
   } | null>(null);
 
-  const router = useRouter();
   const year = new Date().getFullYear();
 
   const showMsg = (message: string, type: "error" | "success") => {
@@ -35,7 +43,6 @@ export default function LoginPage() {
     const password = String(data.get("password") || "").trim();
 
     const newErrors: Record<string, boolean> = {};
-
     if (!email) newErrors.email = true;
     if (!password) newErrors.password = true;
 
@@ -48,13 +55,12 @@ export default function LoginPage() {
     }
 
     try {
-      const res = await signIn("credentials", {
+      const res = (await signIn("credentials", {
         email,
         password,
         redirect: false,
-      });
+      })) as SignInResult;
 
-      // 🔥 IMPORTANT FIX: correct NextAuth error handling
       if (!res || res.error) {
         showMsg("Invalid email or password", "error");
         setLoading(false);
@@ -63,11 +69,12 @@ export default function LoginPage() {
 
       showMsg("Welcome back!", "success");
 
-      // Small delay ensures cookie is written before navigation
+      // ✅ FIXED REDIRECT FLOW
       setTimeout(() => {
-        router.push("/dashboard");
+        router.replace("/dashboard");
         router.refresh();
-      }, 600);
+      }, 500);
+
     } catch (err) {
       console.error(err);
       showMsg("Server error", "error");
@@ -85,7 +92,7 @@ export default function LoginPage() {
 
   return (
     <section className="relative min-h-screen bg-[#020617] flex items-center justify-center px-4 text-white overflow-hidden">
-      
+
       {/* Background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_20%,rgba(6,182,212,0.08),transparent_50%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_80%_80%,rgba(99,102,241,0.06),transparent_50%)]" />
@@ -154,10 +161,7 @@ export default function LoginPage() {
 
           {/* Email */}
           <div className="relative">
-            <Mail
-              size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
-            />
+            <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
             <input
               name="email"
               type="email"
@@ -168,10 +172,7 @@ export default function LoginPage() {
 
           {/* Password */}
           <div className="relative">
-            <Lock
-              size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
-            />
+            <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
 
             <input
               name="password"

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import DashboardShell from "@/components/dashboard/DashboardShell";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata = {
   title: "Dashboard | AverXchange",
@@ -22,7 +23,7 @@ export default async function DashboardLayout({
       displayName={session.user.name || ""}
       balance={0}
     >
-      {children}
+     <SessionProvider>{children}</SessionProvider>
     </DashboardShell>
   );
 }

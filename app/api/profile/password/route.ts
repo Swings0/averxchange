@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { auth } from "@/auth";
+import { auth } from "@/lib/auth";
 import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
 

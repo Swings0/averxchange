@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { auth } from "@/auth"; // NextAuth v5 helper
+import { auth } from "@/lib/auth"; // NextAuth v5 helper
 import { ObjectId } from "mongodb";
 
 export async function GET() {
