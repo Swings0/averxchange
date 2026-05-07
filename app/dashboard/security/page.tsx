@@ -57,7 +57,7 @@ export default function SecurityPage() {
     // For now this just logs out fully — full session tracking can be added later
     setLoggingOut(true);
     try {
-      await fetch("/api/logout");
+      await fetch("/api/logout", { credentials: "include" });
       router.push("/login");
     } finally {
       setLoggingOut(false);
@@ -67,7 +67,7 @@ export default function SecurityPage() {
   const handleDeleteAccount = async () => {
     setDeleting(true);
     try {
-      const res = await fetch("/api/account", { method: "DELETE" });
+      const res = await fetch("/api/account", { method: "DELETE", credentials: "include" });
       if (res.ok) {
         router.push("/login");
       }

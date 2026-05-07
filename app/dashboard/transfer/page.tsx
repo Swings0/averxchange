@@ -42,7 +42,7 @@ export default function TransferPage() {
   const [success, setSuccess] = useState<{ amount: string; recipientName: string } | null>(null);
 
   useEffect(() => {
-    fetch("/api/me")
+    fetch("/api/me", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setBalance(d.balance ?? 0))
       .catch(console.error);
@@ -80,6 +80,7 @@ export default function TransferPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ recipientEmail: recipientEmail.trim(), amount: amt }),
+        credentials: "include"
       });
       const data = await res.json();
 

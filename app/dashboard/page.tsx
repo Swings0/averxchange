@@ -39,6 +39,7 @@ export default function DashboardPage() {
           fetch("/api/me"),
           fetch("/api/transactions"),
           fetch("/api/my-plans"),
+          { credentials: "include" }
         ]);
 
         const me = await meRes.json();

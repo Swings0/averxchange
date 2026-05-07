@@ -30,7 +30,7 @@ export default function TransactionsPage() {
   const [filter, setFilter] = useState<"all" | "deposit" | "withdrawal">("all");
 
   useEffect(() => {
-    fetch("/api/transactions")
+    fetch("/api/transactions", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => setTransactions(data.transactions ?? []))
       .catch(console.error)

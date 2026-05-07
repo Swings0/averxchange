@@ -66,7 +66,7 @@ export default function WithdrawalPage() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch("/api/withdrawal");
+      const res = await fetch("/api/withdrawal", { credentials: "include" });
       const data = await res.json();
       setBalance(data.balance ?? 0);
       setWs(data.withdrawalSettings ?? {});
@@ -102,6 +102,7 @@ export default function WithdrawalPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount: amt, method: selected!.label, walletAddress: wallet.trim() }),
+        credentials: "include"  
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Something went wrong."); setLoaderStatus("error"); setTimeout(() => setLoaderStatus("idle"), 2500); return; }

@@ -42,6 +42,7 @@ export default function SupportPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category, subject, message }),
+        credentials: "include"
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Something went wrong."); return; }

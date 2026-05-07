@@ -138,7 +138,7 @@ export default function ProfilePage() {
 
   // Fetch user on mount
   useEffect(() => {
-    fetch("/api/me")
+    fetch("/api/me", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => setUserData(data))
       .catch(console.error);
@@ -172,6 +172,7 @@ export default function ProfilePage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(personal),
+        credentials: "include"  
       });
       const data = await res.json();
       if (!res.ok) { showLoader("error"); return; }
@@ -211,6 +212,7 @@ export default function ProfilePage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ws),
+        credentials: "include"
       });
       const data = await res.json();
       if (!res.ok) { showLoader("error"); return; }
@@ -237,6 +239,7 @@ export default function ProfilePage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ oldPassword: pw.old, newPassword: pw.new, confirmPassword: pw.confirm }),
+        credentials: "include"
       });
       const data = await res.json();
       if (!res.ok) { setPwError(data.error || "Update failed."); showLoader("error"); return; }

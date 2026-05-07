@@ -113,7 +113,7 @@ export default function DepositPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch("/api/me")
+    fetch("/api/me", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => {
         setBalance(d.balance ?? 0);
@@ -162,7 +162,7 @@ export default function DepositPage() {
       fd.append("walletAddress", selected.address);
       fd.append("proof", proof);
 
-      const res = await fetch("/api/deposit", { method: "POST", body: fd });
+      const res = await fetch("/api/deposit", { method: "POST", body: fd, credentials: "include" });
       const data = await res.json();
 
       if (!res.ok) {

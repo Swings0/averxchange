@@ -19,7 +19,10 @@ export default function ReferralsPage() {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   useEffect(() => {
-    fetch("/api/referrals").then((r) => r.json()).then(setData).catch(console.error);
+    fetch("/api/referrals", { credentials: "include" })
+      .then((r) => r.json())
+      .then(setData)
+      .catch(console.error);
   }, []);
 
   const referralLink = data ? `${baseUrl}/register?ref=${data.referralCode}` : "";

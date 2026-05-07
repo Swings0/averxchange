@@ -42,8 +42,8 @@ export default function TradingPlansPage() {
   const [showSuccess, setShowSuccess] = useState<Plan | null>(null);
 
   useEffect(() => {
-    fetch("/api/me").then((r) => r.json()).then((d) => setBalance(d.balance ?? 0));
-    fetch("/api/my-plans").then((r) => r.json()).then((d) => setActivePlanCount(d.plans?.length ?? 0));
+    fetch("/api/me", { credentials: "include" }).then((r) => r.json()).then((d) => setBalance(d.balance ?? 0));
+    fetch("/api/my-plans", { credentials: "include" }).then((r) => r.json()).then((d) => setActivePlanCount(d.plans?.length ?? 0));
   }, []);
 
   const canBuy = activePlanCount < 5;
@@ -61,6 +61,7 @@ export default function TradingPlansPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId: selectedPlan.id, amount: selectedPlan.price }),
+        credentials: "include"
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Something went wrong."); return; }
