@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getTokenPayload } from "@/lib/auth";
+import { getUserFromRequest } from "@/lib/getUserFromRequest";
 import { ObjectId } from "mongodb";
 
 export async function GET() {
   try {
-    const payload = await getTokenPayload();
+    const payload = await getUserFromRequest();
+
     if (!payload) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -42,7 +43,7 @@ export async function GET() {
       referralCode: user.referralCode || user.username || "",
     });
   } catch (err) {
-    console.error(err);
+    console.error("GET /api/me error:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

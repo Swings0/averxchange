@@ -2,37 +2,20 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const token = req.cookies.get("token")?.value;
 
-  // ── User Dashboard Protection ─────────────────────
-  if (pathname.startsWith("/dashboard")) {
-    const token = req.cookies.get("token")?.value;
+  const protectedPaths = ["/dashboard", "/admin/dashboard"];
+  const isProtected = protectedPaths.some((p) =>
+    req.nextUrl.pathname.startsWith(p)
+  );
 
-    if (!token) {
-      return NextResponse.redirect(
-        new URL("/login", req.url)
-      );
-    }
-  }
-
-  // ── Admin Dashboard Protection ────────────────────
-  if (pathname.startsWith("/admin/dashboard")) {
-    const adminToken =
-      req.cookies.get("admin_token")?.value;
-
-    if (!adminToken) {
-      return NextResponse.redirect(
-        new URL("/admin/login", req.url)
-      );
-    }
+  if (isProtected && !token) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/admin/dashboard/:path*",
-  ],
+  matcher: ["/dashboard/:path*", "/admin/dashboard/:path*"],
 };

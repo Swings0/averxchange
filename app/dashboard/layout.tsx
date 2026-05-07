@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getTokenPayload } from "@/lib/auth";
+import { getUserFromRequest } from "@/lib/getUserFromRequest";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 export const metadata = {
@@ -14,7 +14,7 @@ export default async function DashboardLayout({
   // Only check token — no DB calls here
   // DB calls in layout cause cold-start timeouts on Vercel/Netlify
   // which trigger the catch block and redirect to login
-  const payload = await getTokenPayload();
+  const payload = await getUserFromRequest();
   if (!payload || !payload.userId) {
     redirect("/login");
   }

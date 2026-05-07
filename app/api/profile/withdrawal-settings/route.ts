@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getTokenPayload } from "@/lib/auth";
+import {getUserFromRequest} from "@/lib/getUserFromRequest";
 import { ObjectId } from "mongodb";
 
 export async function PATCH(req: NextRequest) {
   try {
-    const payload = await getTokenPayload();
+    const payload = await getUserFromRequest();
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();

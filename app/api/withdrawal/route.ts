@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getTokenPayload } from "@/lib/auth";
+import {getUserFromRequest} from "@/lib/getUserFromRequest";
 import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
 import { transporter } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = await getTokenPayload();
+    const payload = await getUserFromRequest();
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { amount, method, walletAddress, password } = await req.json();
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
 // Fetch pending withdrawals grouped by method
 export async function GET() {
   try {
-    const payload = await getTokenPayload();
+    const payload = await getUserFromRequest();
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const client = await clientPromise;

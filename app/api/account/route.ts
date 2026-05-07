@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getTokenPayload } from "@/lib/auth";
+import { getUserFromRequest } from "@/lib/getUserFromRequest";
 import { ObjectId } from "mongodb";
 import { transporter } from "@/lib/mailer";
 
 export async function DELETE(req: NextRequest) {
   try {
-    const payload = await getTokenPayload();
+    const payload = await getUserFromRequest();
     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const client = await clientPromise;
