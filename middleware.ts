@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
-  const token = req.cookies.get("token")?.value;
-
   const { pathname } = req.nextUrl;
 
-  // Protect dashboard pages
+  // ── User Dashboard Protection ─────────────────────
   if (pathname.startsWith("/dashboard")) {
+    const token = req.cookies.get("token")?.value;
+
     if (!token) {
       return NextResponse.redirect(
         new URL("/login", req.url)
@@ -15,7 +15,7 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // Protect admin pages
+  // ── Admin Dashboard Protection ────────────────────
   if (pathname.startsWith("/admin/dashboard")) {
     const adminToken =
       req.cookies.get("admin_token")?.value;
