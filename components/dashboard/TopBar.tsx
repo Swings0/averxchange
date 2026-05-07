@@ -45,10 +45,10 @@ export default function TopBar({ displayName, onMenuToggle }: TopBarProps) {
       {/* Right side */}
       <div className="flex items-center gap-2">
         {/* Notifications */}
-        <button className="relative p-2 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-all">
+        {/* <button className="relative p-2 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-all">
           <Bell size={19} />
           <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-cyan-400" />
-        </button>
+        </button> */}
 
         {/* User dropdown */}
         <div
