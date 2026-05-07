@@ -42,7 +42,7 @@ export default function ActivePlans() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/my-plans")
+    fetch("/api/my-plans", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => setPlans(d.plans ?? []))
       .catch(console.error)

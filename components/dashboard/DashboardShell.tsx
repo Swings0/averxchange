@@ -22,7 +22,7 @@ export default function DashboardShell({
     setSidebarOpen(window.innerWidth >= 1024);
 
     // Fetch user info client-side — no server DB calls in layout
-    fetch("/api/me")
+    fetch("/api/me", { credentials: "include" })
       .then((r) => r.json())
       .then((d) => {
         if (d.displayName) setDisplayName(d.displayName);

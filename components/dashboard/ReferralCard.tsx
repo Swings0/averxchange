@@ -9,7 +9,7 @@ export default function ReferralCard() {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
   useEffect(() => {
-    fetch("/api/referrals")
+    fetch("/api/referrals", { credentials: "include" })
       .then((r) => r.json())
       .then((data) => {
         if (data.referralCode) setReferralCode(data.referralCode);
