@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getUserFromRequest } from "@/lib/getUserFromRequest";
+import { auth } from "@/auth";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 export const metadata = {
@@ -11,23 +11,21 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Only check token — no DB calls here
-  // DB calls in layout cause cold-start timeouts on Vercel/Netlify
-  // which trigger the catch block and redirect to login
-  const payload = await getUserFromRequest();
-  if (!payload || !payload.userId) {
+  const session = await auth();
+
+  if (!session?.user) {
     redirect("/login");
   }
 
-  // Pass empty defaults — DashboardShell and Sidebar
-  // fetch their own live data via /api/me client-side
   return (
-    <DashboardShell displayName="" balance={0}>
+    <DashboardShell
+      displayName={session.user.name || ""}
+      balance={0}
+    >
       {children}
     </DashboardShell>
   );
 }
-
 
 
 // import { redirect } from "next/navigation";

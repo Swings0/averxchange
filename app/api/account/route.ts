@@ -1,24 +1,42 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getUserFromRequest } from "@/lib/getUserFromRequest";
+import { auth } from "@/auth";
 import { ObjectId } from "mongodb";
 import { transporter } from "@/lib/mailer";
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE() {
   try {
-    const payload = await getUserFromRequest();
-    if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
 
     const client = await clientPromise;
     const db = client.db();
 
-    const user = await db.collection("users").findOne({ _id: new ObjectId(payload.userId) });
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const user = await db.collection("users").findOne({
+      _id: new ObjectId(userId),
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
 
     // Delete user
-    await db.collection("users").deleteOne({ _id: new ObjectId(payload.userId) });
+    await db.collection("users").deleteOne({
+      _id: new ObjectId(userId),
+    });
 
-    // Notify admin
+    // Notify admin (safe try/catch)
     try {
       await transporter.sendMail({
         from: `"Aver Exchange" <${process.env.EMAIL_USER}>`,
@@ -31,19 +49,21 @@ export async function DELETE(req: NextRequest) {
             <table style="width:100%; border-collapse:collapse;">
               <tr>
                 <td style="padding:8px; border:1px solid #ddd; background:#f9f9f9;"><b>Name</b></td>
-                <td style="padding:8px; border:1px solid #ddd;">${user.username || user.fullName || "N/A"}</td>
+                <td style="padding:8px; border:1px solid #ddd;">${
+                  user.username || user.fullName || "N/A"
+                }</td>
               </tr>
               <tr>
                 <td style="padding:8px; border:1px solid #ddd; background:#f9f9f9;"><b>Email</b></td>
-                <td style="padding:8px; border:1px solid #ddd;">${user.email}</td>
-              </tr>
-              <tr>
-                <td style="padding:8px; border:1px solid #ddd; background:#f9f9f9;"><b>Joined</b></td>
-                <td style="padding:8px; border:1px solid #ddd;">${user.createdAt?.toLocaleDateString?.() ?? "N/A"}</td>
+                <td style="padding:8px; border:1px solid #ddd;">${
+                  user.email
+                }</td>
               </tr>
               <tr>
                 <td style="padding:8px; border:1px solid #ddd; background:#f9f9f9;"><b>Balance at deletion</b></td>
-                <td style="padding:8px; border:1px solid #ddd;">$${user.balance ?? 0}</td>
+                <td style="padding:8px; border:1px solid #ddd;">$${
+                  user.balance ?? 0
+                }</td>
               </tr>
             </table>
           </div>
@@ -53,12 +73,14 @@ export async function DELETE(req: NextRequest) {
       console.error("Delete account mail error:", mailErr);
     }
 
-    // Clear cookie
-    const res = NextResponse.json({ success: true });
-    res.cookies.set("token", "", { maxAge: 0, path: "/" });
-    return res;
+    // ❌ IMPORTANT FIX: do NOT manually clear cookies anymore in NextAuth
+    // NextAuth handles session invalidation automatically
+    return NextResponse.json({ success: true });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("account delete error:", err);
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }

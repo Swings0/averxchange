@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import {getUserFromRequest} from "@/lib/getUserFromRequest";
+import { auth } from "@/auth"; // ✅ NextAuth v5
 import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
 import { transporter } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
   try {
-    const payload = await getUserFromRequest();
-    if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
 
     const { amount, method, walletAddress, password } = await req.json();
 
@@ -18,34 +23,46 @@ export async function POST(req: NextRequest) {
 
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt < 100) {
-      return NextResponse.json({ error: "Minimum withdrawal is $100" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Minimum withdrawal is $100" },
+        { status: 400 }
+      );
     }
 
     const client = await clientPromise;
     const db = client.db();
 
-    const user = await db.collection("users").findOne({ _id: new ObjectId(payload.userId) });
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const user = await db.collection("users").findOne({
+      _id: new ObjectId(userId),
+    });
 
-    // Verify password before allowing withdrawal
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Verify password
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+    if (!validPassword) {
+      return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+    }
 
     const currentBalance = user.balance ?? 0;
+
     if (amt > currentBalance) {
       return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
     }
 
-    // Deduct balance immediately
     const newBalance = parseFloat((currentBalance - amt).toFixed(2));
+
+    // Deduct balance immediately
     await db.collection("users").updateOne(
-      { _id: new ObjectId(payload.userId) },
+      { _id: new ObjectId(userId) },
       { $set: { balance: newBalance } }
     );
 
-    // Save as pending — stays pending until admin approves
+    // Save withdrawal as pending
     await db.collection("transactions").insertOne({
-      userId: payload.userId,
+      userId,
       type: "withdrawal",
       amount: amt,
       method,
@@ -54,52 +71,45 @@ export async function POST(req: NextRequest) {
       createdAt: new Date(),
     });
 
-    // Notify admin
     const userName = user.username || user.fullName || "User";
+
     try {
       await Promise.all([
-        // Admin notification
         transporter.sendMail({
           from: `"Aver Exchange" <${process.env.EMAIL_USER}>`,
           to: process.env.EMAIL_USER!,
           subject: `💸 New Withdrawal Request — ${userName}`,
           html: `
             <div style="font-family:sans-serif;max-width:600px;">
-              <h2 style="color:#0f2744;">New Withdrawal Request</h2>
-              <table style="width:100%;border-collapse:collapse;">
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>User</b></td><td style="padding:8px;border:1px solid #ddd;">${userName}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Email</b></td><td style="padding:8px;border:1px solid #ddd;">${user.email}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Amount</b></td><td style="padding:8px;border:1px solid #ddd;">$${amt.toFixed(2)}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Method</b></td><td style="padding:8px;border:1px solid #ddd;">${method}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Wallet</b></td><td style="padding:8px;border:1px solid #ddd;font-family:monospace;font-size:12px;">${walletAddress}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Remaining Balance</b></td><td style="padding:8px;border:1px solid #ddd;">$${newBalance.toFixed(2)}</td></tr>
-              </table>
+              <h2>New Withdrawal Request</h2>
+              <p><b>User:</b> ${userName}</p>
+              <p><b>Email:</b> ${user.email}</p>
+              <p><b>Amount:</b> $${amt.toFixed(2)}</p>
+              <p><b>Method:</b> ${method}</p>
+              <p><b>Wallet:</b> ${walletAddress}</p>
+              <p><b>Remaining Balance:</b> $${newBalance.toFixed(2)}</p>
             </div>
           `,
         }),
-        // User confirmation
+
         transporter.sendMail({
           from: `"Aver Exchange" <${process.env.EMAIL_USER}>`,
           to: user.email,
           subject: "Withdrawal Request Received 🕐",
           html: `
             <div style="font-family:sans-serif;max-width:600px;">
-              <h2 style="color:#0f2744;">Withdrawal Request Received</h2>
+              <h2>Withdrawal Request Received</h2>
               <p>Hi <b>${userName}</b>,</p>
-              <p>We have received your withdrawal request. Please be patient as our team is currently processing it.</p>
-              <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Amount</b></td><td style="padding:8px;border:1px solid #ddd;">$${amt.toFixed(2)}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Method</b></td><td style="padding:8px;border:1px solid #ddd;">${method}</td></tr>
-                <tr><td style="padding:8px;border:1px solid #ddd;background:#f9f9f9;"><b>Wallet Address</b></td><td style="padding:8px;border:1px solid #ddd;font-family:monospace;font-size:12px;">${walletAddress}</td></tr>
-              </table>
-              <p style="color:#666;font-size:13px;">If you did not initiate this request, please contact our support team immediately.</p>
-              <p>— The Aver Exchange Team</p>
+              <p>Your withdrawal is being processed.</p>
+              <p><b>Amount:</b> $${amt.toFixed(2)}</p>
+              <p><b>Method:</b> ${method}</p>
+              <p><b>Wallet:</b> ${walletAddress}</p>
             </div>
           `,
         }),
       ]);
-    } catch (e) {
-      console.error("Withdrawal mail error:", e);
+    } catch (mailErr) {
+      console.error("Withdrawal mail error:", mailErr);
     }
 
     return NextResponse.json({ success: true, newBalance });
@@ -109,23 +119,34 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Fetch pending withdrawals grouped by method
+// ==============================
+// GET (NextAuth version)
+// ==============================
 export async function GET() {
   try {
-    const payload = await getUserFromRequest();
-    if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
 
     const client = await clientPromise;
     const db = client.db();
 
     const user = await db.collection("users").findOne(
-      { _id: new ObjectId(payload.userId) },
+      { _id: new ObjectId(userId) },
       { projection: { password: 0 } }
     );
 
     const pending = await db
       .collection("transactions")
-      .find({ userId: payload.userId, type: "withdrawal", status: "pending" })
+      .find({
+        userId,
+        type: "withdrawal",
+        status: "pending",
+      })
       .sort({ createdAt: -1 })
       .toArray();
 
@@ -142,7 +163,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error(err);
+    console.error("WITHDRAWAL GET ERROR:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

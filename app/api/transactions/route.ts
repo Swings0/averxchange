@@ -1,24 +1,26 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getUserFromRequest } from "@/lib/getUserFromRequest";
-import { ObjectId } from "mongodb";
+import { auth } from "@/auth";
 
 export async function GET() {
   try {
-    const payload = await getUserFromRequest();
-    if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // ✅ NextAuth session (replaces manual JWT auth)
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
 
     const client = await clientPromise;
     const db = client.db();
 
-    // All transactions visible to user:
-    // - Deposits: approved only
-    // - Withdrawals: all statuses (pending, approved, declined, reversed)
-    // - Transfers: approved only
+    // ── Fetch transactions ─────────────────────────
     const all = await db
       .collection("transactions")
       .find({
-        userId: payload.userId,
+        userId,
         $or: [
           { type: "deposit", status: "approved" },
           { type: "withdrawal" },
@@ -29,6 +31,7 @@ export async function GET() {
       .sort({ createdAt: -1 })
       .toArray();
 
+    // ── Response ───────────────────────────────────
     return NextResponse.json({
       transactions: all.map((t) => ({
         id: t._id.toString(),
@@ -43,7 +46,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error(err);
+    console.error("TRANSACTIONS ERROR:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

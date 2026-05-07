@@ -4,33 +4,33 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ConstellationBackground } from "@/components/ui/constellation";
 import "swiper/swiper-bundle.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+
+import Providers from "./providers";
 
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
-})
+});
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-})
+});
 
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
-})
+});
 
 export const metadata: Metadata = {
   title: "AverExchange",
   description: "Modern crypto & forex trading platform",
-}
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html
@@ -45,18 +45,18 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full relative flex flex-col font-sans">
+        <Providers>
 
-        {/* 🌌 GLOBAL CONSTELLATION BACKGROUND */}
-        <ConstellationBackground className="fixed inset-0 -z-10" />
+          {/* 🌌 GLOBAL CONSTELLATION BACKGROUND */}
+          <ConstellationBackground className="fixed inset-0 -z-10" />
 
-        {/* MAIN CONTENT */}
-        <main className="relative z-10">
-          {/* <Navbar /> */}
-          {children}
-          {/* <Footer /> */}
-        </main>
+          {/* MAIN CONTENT */}
+          <main className="relative z-10">
+            {children}
+          </main>
 
+        </Providers>
       </body>
     </html>
-  )
+  );
 }

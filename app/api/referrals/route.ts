@@ -1,25 +1,35 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getUserFromRequest } from "@/lib/getUserFromRequest";
+import { auth } from "@/auth";
 import { ObjectId } from "mongodb";
- 
+
 export async function GET() {
   try {
-    const payload = await getUserFromRequest();
-    if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // ✅ NextAuth session (replaces getUserFromRequest)
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
 
     const client = await clientPromise;
     const db = client.db();
 
+    // ── Fetch current user ─────────────────────────
     const user = await db.collection("users").findOne(
-      { _id: new ObjectId(payload.userId) },
+      { _id: new ObjectId(userId) },
       { projection: { password: 0 } }
     );
 
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
 
-    // Find who referred this user
+    // ── Find who referred this user ────────────────
     let referredByUser = null;
+
     if (user.referredBy) {
       referredByUser = await db.collection("users").findOne(
         { _id: new ObjectId(user.referredBy) },
@@ -27,16 +37,25 @@ export async function GET() {
       );
     }
 
-    // Find all users this user referred
+    // ── Find referrals made by this user ──────────
     const referrals = await db
       .collection("users")
       .find(
-        { referredBy: payload.userId },
-        { projection: { username: 1, fullName: 1, email: 1, createdAt: 1, balance: 1 } }
+        { referredBy: userId },
+        {
+          projection: {
+            username: 1,
+            fullName: 1,
+            email: 1,
+            createdAt: 1,
+            balance: 1,
+          },
+        }
       )
       .sort({ createdAt: -1 })
       .toArray();
 
+    // ── Response ───────────────────────────────────
     return NextResponse.json({
       referralCode: user.referralCode || user.username || "",
       referralBonus: user.referralBonus ?? 0,
@@ -52,7 +71,7 @@ export async function GET() {
       })),
     });
   } catch (err) {
-    console.error(err);
+    console.error("REFERRAL ROUTE ERROR:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

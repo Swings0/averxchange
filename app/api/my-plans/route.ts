@@ -1,76 +1,106 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import {getUserFromRequest} from "@/lib/getUserFromRequest";
+import { auth } from "@/auth";
 import { ObjectId } from "mongodb";
 
 export async function GET() {
   try {
-    const payload = await getUserFromRequest();
-    if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
 
     const client = await clientPromise;
     const db = client.db();
     const now = new Date();
 
-    // ── 1. Apply any pending scheduled stat updates ──
+    // ── 1. Apply scheduled updates ──
     const pendingUpdates = await db
       .collection("scheduledUpdates")
-      .find({ userId: payload.userId, applied: false, applyAt: { $lte: now } })
+      .find({
+        userId,
+        applied: false,
+        applyAt: { $lte: now },
+      })
       .toArray();
 
     for (const u of pendingUpdates) {
       await db.collection("users").updateOne(
-        { _id: new ObjectId(payload.userId) },
+        { _id: new ObjectId(userId) },
         { $set: { [u.field]: u.value } }
       );
+
       await db.collection("scheduledUpdates").updateOne(
         { _id: u._id },
         { $set: { applied: true } }
       );
     }
 
-    // ── 2. Activate any admin plans whose startDate has arrived ──
+    // ── 2. Activate pending plans ──
     await db.collection("plans").updateMany(
-      { userId: payload.userId, status: "pending", startDate: { $lte: now } },
-      { $set: { status: "active", lastAccrualDate: now } }
+      {
+        userId,
+        status: "pending",
+        startDate: { $lte: now },
+      },
+      {
+        $set: {
+          status: "active",
+          lastAccrualDate: now,
+        },
+      }
     );
 
-    // ── 3. Check expired plans and credit profit to balance ──
+    // ── 3. Handle expired plans ──
     const expiredPlans = await db
       .collection("plans")
-      .find({ userId: payload.userId, status: "active", endDate: { $lte: now } })
+      .find({
+        userId,
+        status: "active",
+        endDate: { $lte: now },
+      })
       .toArray();
 
     if (expiredPlans.length > 0) {
-      // Sum all profits from expired plans
       const totalProfitToCredit = expiredPlans.reduce(
-        (sum, p) => sum + (p.totalProfit ?? 0), 0
+        (sum, p) => sum + (p.totalProfit ?? 0),
+        0
       );
 
-      // Mark plans as expired
       const expiredIds = expiredPlans.map((p) => p._id);
+
       await db.collection("plans").updateMany(
         { _id: { $in: expiredIds } },
         { $set: { status: "expired" } }
       );
 
-      // Credit profit to user balance
       await db.collection("users").updateOne(
-        { _id: new ObjectId(payload.userId) },
-        { $inc: { balance: totalProfitToCredit, totalProfit: totalProfitToCredit } }
+        { _id: new ObjectId(userId) },
+        {
+          $inc: {
+            balance: totalProfitToCredit,
+            totalProfit: totalProfitToCredit,
+          },
+        }
       );
     }
 
-    // ── 4. Fetch active plans (both user-purchased and admin-loaded) ──
+    // ── 4. Fetch active plans ──
     const activePlans = await db
       .collection("plans")
-      .find({ userId: payload.userId, status: "active" })
+      .find({
+        userId,
+        status: "active",
+      })
       .sort({ createdAt: -1 })
       .toArray();
 
-    // ── 5. Get updated user data ──
+    // ── 5. Fetch user summary ──
     const user = await db.collection("users").findOne(
-      { _id: new ObjectId(payload.userId) },
+      { _id: new ObjectId(userId) },
       { projection: { balance: 1, totalProfit: 1 } }
     );
 
@@ -93,7 +123,10 @@ export async function GET() {
       totalProfit: user?.totalProfit ?? 0,
     });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("GET /api/my-plans error:", err);
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }

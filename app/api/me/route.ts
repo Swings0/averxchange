@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { getUserFromRequest } from "@/lib/getUserFromRequest";
+import { auth } from "@/auth"; // NextAuth v5 helper
 import { ObjectId } from "mongodb";
 
 export async function GET() {
   try {
-    const payload = await getUserFromRequest();
+    const session = await auth();
 
-    if (!payload) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -15,7 +15,7 @@ export async function GET() {
     const db = client.db();
 
     const user = await db.collection("users").findOne(
-      { _id: new ObjectId(payload.userId) },
+      { _id: new ObjectId(session.user.id) },
       { projection: { password: 0 } }
     );
 
