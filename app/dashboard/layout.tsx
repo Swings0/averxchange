@@ -24,7 +24,7 @@ export default async function DashboardLayout({
       balance={0}
     >
      <SessionProvider>{children}</SessionProvider>
-    </DashboardShell>
+     </DashboardShell>
   );
 }
 
