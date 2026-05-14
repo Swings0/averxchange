@@ -34,7 +34,7 @@ const CARDS = (p: AccountSummaryProps) => [
     iconColor: "text-cyan-400",
   },
   {
-    label: "Earnings",
+    label: "Daily Profit",
     value: fmt(p.dailyProfit),
     icon: Zap,
     gradient: "from-yellow-500/15 to-amber-600/15",
