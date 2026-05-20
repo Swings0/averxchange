@@ -18,7 +18,10 @@ export async function POST(req: NextRequest) {
     const { amount, method, walletAddress } = await req.json();
 
     if (!amount || !method || !walletAddress) {
-      return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "All fields are required" },
+        { status: 400 }
+      );
     }
 
     const amt = parseFloat(amount);
@@ -49,7 +52,10 @@ export async function POST(req: NextRequest) {
     const currentBalance = user.balance ?? 0;
 
     if (amt > currentBalance) {
-      return NextResponse.json({ error: "Insufficient balance" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Insufficient balance" },
+        { status: 400 }
+      );
     }
 
     const newBalance = parseFloat((currentBalance - amt).toFixed(2));
@@ -76,8 +82,9 @@ export async function POST(req: NextRequest) {
     try {
       await Promise.all([
         transporter.sendMail({
-          from: `"Aver Exchange" <${process.env.EMAIL_USER}>`,
-          to: process.env.EMAIL_USER!,
+          from: process.env.EMAIL_FROM,
+          to: process.env.EMAIL_TO!,
+          replyTo: user.email,
           subject: `💸 New Withdrawal Request — ${userName}`,
           html: `
             <div style="font-family:sans-serif;max-width:600px;">
@@ -93,17 +100,20 @@ export async function POST(req: NextRequest) {
         }),
 
         transporter.sendMail({
-          from: `"Aver Exchange" <${process.env.EMAIL_USER}>`,
+          from: process.env.EMAIL_FROM,
           to: user.email,
           subject: "Withdrawal Request Received 🕐",
           html: `
             <div style="font-family:sans-serif;max-width:600px;">
               <h2>Withdrawal Request Received</h2>
               <p>Hi <b>${userName}</b>,</p>
-              <p>Your withdrawal is being processed.</p>
+              <p>Your withdrawal request has been received and is currently being processed by our team.</p>
               <p><b>Amount:</b> $${amt.toFixed(2)}</p>
               <p><b>Method:</b> ${method}</p>
               <p><b>Wallet:</b> ${walletAddress}</p>
+              <p style="margin-top:16px;color:#666;font-size:13px;">
+                You will be notified once your withdrawal has been approved and completed.
+              </p>
             </div>
           `,
         }),
@@ -176,8 +186,6 @@ export async function GET() {
 
 
 
-
-
 // import { NextRequest, NextResponse } from "next/server";
 // import clientPromise from "@/lib/mongodb";
 // import { auth } from "@/lib/auth"; // ✅ NextAuth v5
@@ -195,9 +203,9 @@ export async function GET() {
 
 //     const userId = session.user.id;
 
-//     const { amount, method, walletAddress, password } = await req.json();
+//     const { amount, method, walletAddress } = await req.json();
 
-//     if (!amount || !method || !walletAddress || !password) {
+//     if (!amount || !method || !walletAddress) {
 //       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
 //     }
 
@@ -221,10 +229,10 @@ export async function GET() {
 //     }
 
 //     // Verify password
-//     const validPassword = await bcrypt.compare(password, user.password);
-//     if (!validPassword) {
-//       return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
-//     }
+//     // const validPassword = await bcrypt.compare(password, user.password);
+//     // if (!validPassword) {
+//     //   return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+//     // }
 
 //     const currentBalance = user.balance ?? 0;
 
@@ -347,3 +355,13 @@ export async function GET() {
 //     return NextResponse.json({ error: "Server error" }, { status: 500 });
 //   }
 // }
+
+
+
+
+
+
+
+
+
+

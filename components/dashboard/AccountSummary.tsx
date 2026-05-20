@@ -17,7 +17,7 @@ interface AccountSummaryProps {
   referralBonus: number;
   totalDeposit: number;
   totalWithdrawal: number;
-  dailyProfit: number;
+  totalEarned: number;
 }
 
 function fmt(n: number) {
@@ -34,8 +34,8 @@ const CARDS = (p: AccountSummaryProps) => [
     iconColor: "text-cyan-400",
   },
   {
-    label: "Daily Profit",
-    value: fmt(p.dailyProfit),
+    label: "Earned",
+    value: fmt(p.totalEarned),
     icon: Zap,
     gradient: "from-yellow-500/15 to-amber-600/15",
     border: "border-yellow-500/20",
@@ -132,10 +132,9 @@ export default function AccountSummary(props: AccountSummaryProps) {
           );
         })}
       </div>
-    </section> 
+    </section>
   );
 }
-
 
 // import {
 //   Wallet,

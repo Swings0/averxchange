@@ -78,7 +78,7 @@ export default function EarningsToast() {
               </div>
 
               <div className="leading-tight">
-                <p className="text-xs font-semibold text-cyan-300">Earning</p>
+                <p className="text-xs font-semibold text-cyan-300">Earnings</p>
 
                 <p className="text-xs font-medium text-white/90">
                   {toast.name} from{" "}

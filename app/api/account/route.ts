@@ -39,8 +39,9 @@ export async function DELETE() {
     // Notify admin (safe try/catch)
     try {
       await transporter.sendMail({
-        from: `"Aver Exchange" <${process.env.EMAIL_USER}>`,
-        to: process.env.EMAIL_USER!,
+        from: process.env.EMAIL_FROM,
+        to: process.env.EMAIL_TO!,
+        replyTo: user.email,
         subject: "⚠️ User Account Deleted",
         html: `
           <div style="font-family:sans-serif; max-width:600px;">

@@ -16,7 +16,7 @@ interface UserData {
   referralBonus: number;
   totalDeposit: number;
   totalWithdrawal: number;
-  dailyProfit: number;
+  totalEarned: number;
 }
 
 interface Transaction {
@@ -25,6 +25,11 @@ interface Transaction {
   type: string;
   amount: number;
   status: string;
+}
+
+interface ActivePlan {
+  dailyProfit: number;
+  startDate: string;
 }
 
 export default function DashboardPage() {
@@ -48,8 +53,16 @@ export default function DashboardPage() {
         const tx = await txRes.json();
         const plans = await plansRes.json();
 
-        const totalDailyProfit = (plans.plans ?? []).reduce(
-          (sum: number, p: { dailyProfit: number }) => sum + (p.dailyProfit ?? 0),
+        // Sum earned so far across all active plans (same logic as PlanCard)
+        const totalEarned = (plans.plans ?? []).reduce(
+          (sum: number, p: ActivePlan) => {
+            const start = new Date(p.startDate).getTime();
+            const daysElapsed = Math.max(
+              0,
+              Math.floor((Date.now() - start) / 86400000)
+            );
+            return sum + p.dailyProfit * daysElapsed;
+          },
           0
         );
 
@@ -62,7 +75,7 @@ export default function DashboardPage() {
           referralBonus: me.referralBonus ?? 0,
           totalDeposit: me.totalDeposit ?? 0,
           totalWithdrawal: me.totalWithdrawal ?? 0,
-          dailyProfit: totalDailyProfit,
+          totalEarned,
         });
 
         const recent = (tx.transactions ?? []).slice(0, 5);
@@ -105,7 +118,7 @@ export default function DashboardPage() {
         referralBonus={user?.referralBonus ?? 0}
         totalDeposit={user?.totalDeposit ?? 0}
         totalWithdrawal={user?.totalWithdrawal ?? 0}
-        dailyProfit={user?.dailyProfit ?? 0}
+        totalEarned={user?.totalEarned ?? 0}
       />
 
       <ActivePlans />
@@ -116,7 +129,6 @@ export default function DashboardPage() {
     </div>
   );
 }
-
 
 
 

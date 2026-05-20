@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`;
 
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM,
       to: email,
       subject: "Reset Your Password",
       html: `
@@ -65,7 +65,6 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ message: "Reset link sent to email" });
-
   } catch (err) {
     console.error("POST /api/forgot-password error:", err);
     return NextResponse.json(
