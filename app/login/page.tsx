@@ -67,7 +67,7 @@ export default function LoginPage() {
         return;
       }
 
-      showMsg("Welcome back!", "success");
+      showMsg("Welcome!", "success");
 
       // ✅ FIXED REDIRECT FLOW
       setTimeout(() => {

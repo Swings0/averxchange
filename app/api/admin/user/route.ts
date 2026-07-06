@@ -45,7 +45,9 @@ export async function GET(req: NextRequest) {
           { userId },
           { userId: user._id },
         ],
-        status: "active",
+        status: {
+        $in: ["active", "paused"]
+         }
       })
       .sort({ createdAt: -1 })
       .toArray();
