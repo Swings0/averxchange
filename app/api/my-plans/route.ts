@@ -8,7 +8,10 @@ export async function GET() {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
 
     const userId = session.user.id;
@@ -17,6 +20,7 @@ export async function GET() {
     const db = client.db();
     const now = new Date();
 
+    // Apply scheduled stat updates
     const pendingUpdates = await db
       .collection("scheduledUpdates")
       .find({
@@ -29,15 +33,24 @@ export async function GET() {
     for (const u of pendingUpdates) {
       await db.collection("users").updateOne(
         { _id: new ObjectId(userId) },
-        { $set: { [u.field]: u.value } }
+        {
+          $set: {
+            [u.field]: u.value,
+          },
+        }
       );
 
       await db.collection("scheduledUpdates").updateOne(
         { _id: u._id },
-        { $set: { applied: true } }
+        {
+          $set: {
+            applied: true,
+          },
+        }
       );
     }
 
+    // Activate pending plans whose start time has arrived
     await db.collection("plans").updateMany(
       {
         $or: [
@@ -55,6 +68,9 @@ export async function GET() {
       }
     );
 
+    // Only ACTIVE plans can expire.
+    // Paused plans are intentionally ignored because their endDate
+    // gets shifted forward when resumed.
     const expiredPlans = await db
       .collection("plans")
       .find({
@@ -68,48 +84,70 @@ export async function GET() {
       .toArray();
 
     if (expiredPlans.length > 0) {
-      const totalProfitToCredit = expiredPlans.reduce(
-        (sum, p) => sum + (p.totalProfit ?? 0),
-        0
-      );
+        const totalProfitToCredit = expiredPlans.reduce(
+          (sum, p) => sum + (p.totalProfit ?? 0),
+          0
+        );
 
-      const expiredIds = expiredPlans.map((p) => p._id);
+        const expiredIds = expiredPlans.map((p) => p._id);
 
-      await db.collection("plans").updateMany(
-        { _id: { $in: expiredIds } },
-        { $set: { status: "expired" } }
-      );
-
-      await db.collection("users").updateOne(
-        { _id: new ObjectId(userId) },
-        {
-          $inc: {
-            balance: totalProfitToCredit,
-            totalProfit: totalProfitToCredit,
+        await db.collection("plans").updateMany(
+          {
+            _id: {
+              $in: expiredIds,
+            },
           },
-        }
-      );
+          {
+            $set: {
+              status: "expired",
+            },
+          }
+        );
+
+        await db.collection("users").updateOne(
+          {
+            _id: new ObjectId(userId),
+          },
+          {
+            $inc: {
+              balance: totalProfitToCredit,
+              totalProfit: totalProfitToCredit,
+            },
+          }
+        );
     }
 
-const activePlans = await db
-  .collection("plans")
-  .find({
-    $or: [
-      { userId },
-      { userId: new ObjectId(userId) },
-    ],
-    status: { $in: ["active", "paused"] },
-  })
-  .sort({ createdAt: -1 })
-  .toArray();
+    // Return both ACTIVE and PAUSED plans
+    const plans = await db
+      .collection("plans")
+      .find({
+        $or: [
+          { userId },
+          { userId: new ObjectId(userId) },
+        ],
+        status: {
+          $in: ["active", "paused"],
+        },
+      })
+      .sort({
+        createdAt: -1,
+      })
+      .toArray();
 
     const user = await db.collection("users").findOne(
-      { _id: new ObjectId(userId) },
-      { projection: { balance: 1, totalProfit: 1 } }
+      {
+        _id: new ObjectId(userId),
+      },
+      {
+        projection: {
+          balance: 1,
+          totalProfit: 1,
+        },
+      }
     );
 
     return NextResponse.json({
-      plans: activePlans.map((p) => ({
+      plans: plans.map((p) => ({
         id: p._id.toString(),
         name: p.name,
         planId: p.planId,
@@ -121,12 +159,12 @@ const activePlans = await db
         source: p.source ?? "user",
         startDate: p.startDate?.toISOString() ?? now.toISOString(),
         endDate: p.endDate?.toISOString() ?? now.toISOString(),
-        status: p.status,
+        status: p.status, // active | paused
+        pausedAt: p.pausedAt?.toISOString() ?? null,
       })),
       balance: user?.balance ?? 0,
       totalProfit: user?.totalProfit ?? 0,
     });
-
   } catch (err) {
     console.error("GET /api/my-plans error:", err);
 
@@ -138,69 +176,113 @@ const activePlans = await db
 }
 
 
-
-
-
-
-
-// import { NextRequest, NextResponse } from "next/server";
+// import { NextResponse } from "next/server";
 // import clientPromise from "@/lib/mongodb";
-// import { getApiTokenPayload } from "@/lib/apiAuth";
+// import { auth } from "@/lib/auth";
 // import { ObjectId } from "mongodb";
 
-// export async function GET(req: NextRequest) {
+// export async function GET() {
 //   try {
-//     const payload = await getApiTokenPayload(req);
-//     if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     const session = await auth();
+
+//     if (!session?.user?.id) {
+//       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+//     }
+
+//     const userId = session.user.id;
 
 //     const client = await clientPromise;
 //     const db = client.db();
 //     const now = new Date();
 
-//     // Apply pending scheduled stat updates
-//     const pendingUpdates = await db.collection("scheduledUpdates")
-//       .find({ userId: payload.userId, applied: false, applyAt: { $lte: now } })
+//     const pendingUpdates = await db
+//       .collection("scheduledUpdates")
+//       .find({
+//         userId,
+//         applied: false,
+//         applyAt: { $lte: now },
+//       })
 //       .toArray();
+
 //     for (const u of pendingUpdates) {
 //       await db.collection("users").updateOne(
-//         { _id: new ObjectId(payload.userId) },
+//         { _id: new ObjectId(userId) },
 //         { $set: { [u.field]: u.value } }
 //       );
+
 //       await db.collection("scheduledUpdates").updateOne(
-//         { _id: u._id }, { $set: { applied: true } }
+//         { _id: u._id },
+//         { $set: { applied: true } }
 //       );
 //     }
 
-//     // Activate pending admin plans
 //     await db.collection("plans").updateMany(
-//       { userId: payload.userId, status: "pending", startDate: { $lte: now } },
-//       { $set: { status: "active", lastAccrualDate: now } }
+//       {
+//         $or: [
+//           { userId },
+//           { userId: new ObjectId(userId) },
+//         ],
+//         status: "pending",
+//         startDate: { $lte: now },
+//       },
+//       {
+//         $set: {
+//           status: "active",
+//           lastAccrualDate: now,
+//         },
+//       }
 //     );
 
-//     // Credit profit for expired plans
-//     const expiredPlans = await db.collection("plans")
-//       .find({ userId: payload.userId, status: "active", endDate: { $lte: now } })
+//     const expiredPlans = await db
+//       .collection("plans")
+//       .find({
+//         $or: [
+//           { userId },
+//           { userId: new ObjectId(userId) },
+//         ],
+//         status: "active",
+//         endDate: { $lte: now },
+//       })
 //       .toArray();
 
 //     if (expiredPlans.length > 0) {
-//       const totalProfitToCredit = expiredPlans.reduce((sum, p) => sum + (p.totalProfit ?? 0), 0);
+//       const totalProfitToCredit = expiredPlans.reduce(
+//         (sum, p) => sum + (p.totalProfit ?? 0),
+//         0
+//       );
+
+//       const expiredIds = expiredPlans.map((p) => p._id);
+
 //       await db.collection("plans").updateMany(
-//         { _id: { $in: expiredPlans.map((p) => p._id) } },
+//         { _id: { $in: expiredIds } },
 //         { $set: { status: "expired" } }
 //       );
+
 //       await db.collection("users").updateOne(
-//         { _id: new ObjectId(payload.userId) },
-//         { $inc: { balance: totalProfitToCredit, totalProfit: totalProfitToCredit } }
+//         { _id: new ObjectId(userId) },
+//         {
+//           $inc: {
+//             balance: totalProfitToCredit,
+//             totalProfit: totalProfitToCredit,
+//           },
+//         }
 //       );
 //     }
 
-//     const activePlans = await db.collection("plans")
-//       .find({ userId: payload.userId, status: { $in: ["active", "paused"] } })
-//       .sort({ createdAt: -1 })
-//       .toArray();
+// const activePlans = await db
+//   .collection("plans")
+//   .find({
+//     $or: [
+//       { userId },
+//       { userId: new ObjectId(userId) },
+//     ],
+//     status: { $in: ["active", "paused"] },
+//   })
+//   .sort({ createdAt: -1 })
+//   .toArray();
 
 //     const user = await db.collection("users").findOne(
-//       { _id: new ObjectId(payload.userId) },
+//       { _id: new ObjectId(userId) },
 //       { projection: { balance: 1, totalProfit: 1 } }
 //     );
 
@@ -222,8 +304,20 @@ const activePlans = await db
 //       balance: user?.balance ?? 0,
 //       totalProfit: user?.totalProfit ?? 0,
 //     });
+
 //   } catch (err) {
-//     console.error(err);
-//     return NextResponse.json({ error: "Server error" }, { status: 500 });
+//     console.error("GET /api/my-plans error:", err);
+
+//     return NextResponse.json(
+//       { error: "Server error" },
+//       { status: 500 }
+//     );
 //   }
 // }
+
+
+
+
+
+
+
